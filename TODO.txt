@@ -1,0 +1,11 @@
+Protocol:
+* es_rod_position_server, shutdown rods
+* {set, flux_now, Flux} i {set_now, flux, Flux} transform to {set, flux, Flux}
+
+General features:
+* implement es_rod_controller_server
+* es_action_server should log it's actions
+
+Erlang/OTP problem
+* errors in snapshot file do not generate error report
+* if two gen_tcp servers listen on the same port, they fail silently

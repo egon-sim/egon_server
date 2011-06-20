@@ -1,0 +1,22 @@
+{application, egon_server,
+   [{description, "EGON_server: simple nuclear power plant simulator (server)"},
+   {vsn, "0.0.1"},
+   {modules, [
+      es_app,
+      es_sup,
+      es_clock_server,
+      es_config_server,
+      es_core_server, 
+      es_flux_buffer_server, 
+      es_makeup_buffer_server, 
+      es_rod_controller,
+      es_interface_server,
+      es_new_interface_server,
+      es_action_server,
+      es_ramper_server,
+      es_rodcontrol_server, 
+      es_turbine_server]},
+   {registered, []},
+   {applications, [kernel, stdlib]},
+   {mod, {es_app, []}}
+]}.

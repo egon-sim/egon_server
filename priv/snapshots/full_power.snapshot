@@ -1,0 +1,21 @@
+[{es_clock_server, cycle_len, 1000},
+{es_clock_server, log_ticks, false},
+
+{es_flux_buffer_server, flux_diff_per_cycle, 0.5},
+{es_flux_buffer_server, cycle_len, 1},
+
+{es_makeup_buffer_server, boron_diff_per_cycle, 1},
+{es_makeup_buffer_server, cycle_len, 1},
+
+{es_rod_controller_server, mode, manual},
+{es_rod_position_server, position_counter, 612},
+
+{es_turbine_server, power, 100},
+{es_turbine_server, target, 80},
+{es_turbine_server, rate, 1},
+{es_turbine_server, go, false},
+
+{es_core_server, burnup, 7000},
+{es_core_server, boron, 1515},
+{es_core_server, flux_now, 100}
+].
