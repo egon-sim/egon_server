@@ -1,11 +1,39 @@
 Protocol:
-* es_rod_position_server, shutdown rods
-* {set, flux_now, Flux} i {set_now, flux, Flux} transform to {set, flux, Flux}
+#- {set, flux_now, Flux} and {set_now, flux, Flux} transform to {set, flux, Flux}
+#0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
 
 General features:
-* implement es_rod_controller_server
-* es_action_server should log it's actions
+*0 extract client code from egon_server
+*0 logger server: tracking parameters and storing them
+$- es_action_server should log it's actions
+#+ logging everthing
+#0 changing simulation speed
 
-Erlang/OTP problem
-* errors in snapshot file do not generate error report
-* if two gen_tcp servers listen on the same port, they fail silently
+egon_client:
+$- xls generation
+
+Separating implementation and configuration:
+$+ move hardcoded setpoints from es_rod_controller_server:rod_speed to curvebook/pls
+
+Erlang/OTP problem:
+#? errors in snapshot file do not generate error report
+#? if two gen_tcp servers listen on the same port, they fail silently
+
+Userfriendlyness:
+$+ writing unit tests
+$+ writing documentation
+#0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
+#0 building a release (OTP in Action, chapter 10)
+
+
+LEGEND:
+
+Importance:
+* - high
+% - medium
+# - low
+
+Complexity:
++ - high
+0 - medium
+- - low
