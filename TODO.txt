@@ -3,6 +3,7 @@ Protocol:
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
 
 General features:
+*- throw error if something is missing from priv dir
 *0 extract client code from egon_server
 *0 logger server: tracking parameters and storing them
 $- es_action_server should log it's actions

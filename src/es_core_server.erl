@@ -1,6 +1,5 @@
 -module(es_core_server).
 -behaviour(gen_server).
--import(es_flux_buffer_server).
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(core_state, {port, flux_buffer, boron, burnup, flux}).
 

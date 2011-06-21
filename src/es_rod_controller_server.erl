@@ -40,11 +40,11 @@ handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto 
     if
         Ticks_left =< 1 ->
 	    step(New_speed),
-	    New_ticks_left = New_ticks
+	    New_ticks_left = New_ticks;
         Ticks_left >= New_ticks ->
 	    New_ticks_left = New_ticks - 1;
         Ticks_left > 1 ->
-	    New_ticks_left = Ticks_left - 1;
+	    New_ticks_left = Ticks_left - 1
     end,
     New_state = State#rod_controller_state{speed=New_speed, ticks_left = New_ticks_left},
     {reply, tick, New_state};
