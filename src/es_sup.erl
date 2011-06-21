@@ -13,6 +13,9 @@ start_link() ->
    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 init([]) ->
+   Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, []},
+      temporary, 2000, worker, [es_curvebook_server]},
+   
    Config = {es_config_server, {es_config_server, start_link, []},
       permanent, 2000, worker, [es_config_server]},
    
@@ -21,9 +24,6 @@ init([]) ->
    
    W7300 = {es_w7300_server, {es_w7300_server, start_link, []},
       temporary, 2000, worker, [es_w7300_server]},
-   
-   Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, []},
-      temporary, 2000, worker, [es_curvebook_server]},
    
    Rod_Position = {es_rod_position_server, {es_rod_position_server, start_link, []},
       temporary, 2000, worker, [es_rod_position_server]},
@@ -55,6 +55,6 @@ init([]) ->
    Ramper = {es_ramper_server, {es_ramper_server, start_link, []},
       temporary, 2000, worker, [es_ramper_server]},
    
-   Children = [Config, Clock, W7300, Curvebook, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface, Action_interface, Set_interface, Turbine, Ramper],
+   Children = [Curvebook, Config, Clock, W7300, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface, Action_interface, Set_interface, Turbine, Ramper],
    RestartStrategy = {one_for_one, 1, 2},
    {ok, {RestartStrategy, Children}}.
