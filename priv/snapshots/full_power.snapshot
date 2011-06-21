@@ -8,7 +8,8 @@
 {es_makeup_buffer_server, cycle_len, 1},
 
 {es_rod_controller_server, mode, manual},
-{es_rod_position_server, position_counter, 612},
+{es_rod_position_server, control_position_counter, 612},
+{es_rod_position_server, shutdown_position_counter, 228},
 
 {es_turbine_server, power, 100},
 {es_turbine_server, target, 80},

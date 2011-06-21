@@ -23,8 +23,8 @@ action(What) ->
 %stop() ->
 %    es_comm:stop(rods_port).
 
-position() -> es_rod_position:get(position).
-position(Group) -> es_rod_position:get(position, Group).
+position() -> es_rod_position:get(control_position).
+position(Group) -> es_rod_position:get(control_position, Group).
 step_in() -> action(step_in).
 step_out() -> action(step_out).
 
