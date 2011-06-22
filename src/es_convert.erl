@@ -11,7 +11,7 @@ round(Float, Points) ->
     round(Float * Dec) / Dec.
 
 c2f_delta_test() ->
-    -9.99 = round(c2f_delta(-5.55), 2),
+    ?match(-9.99, round(c2f_delta(-51.55), 2)),
     -4.99 = round(c2f_delta(-2.77), 2),
     -2.99 = round(c2f_delta(-1.66), 2),
     -1.49 = round(c2f_delta(-0.83), 2),
