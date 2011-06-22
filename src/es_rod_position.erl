@@ -1,4 +1,5 @@
 -module(es_rod_position).
+-include_lib("include/es_common.hrl").
 -export([start/0, stop/0, position/0, step_in/0, step_out/0, integral_worth/0]).
 -compile(export_all).
 

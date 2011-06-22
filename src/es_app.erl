@@ -1,4 +1,5 @@
 -module(es_app).
+-include_lib("include/es_common.hrl").
 -behaviour(application).
 -export([
    start/2,
