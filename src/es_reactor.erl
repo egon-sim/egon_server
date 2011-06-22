@@ -1,4 +1,5 @@
 -module(es_reactor).
+-include_lib("include/es_common.hrl").
 -import(es_core).
 -import(es_rod_position).
 -import(es_timer).

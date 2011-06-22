@@ -1,4 +1,5 @@
 -module(es_sup).
+-include_lib("include/es_common.hrl").
 -behaviour(supervisor).
 
 %% API

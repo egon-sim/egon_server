@@ -1,4 +1,5 @@
 -module(es_interface_client).
+-include_lib("include/es_common.hrl").
 -import(re).
 -compile(export_all).
 

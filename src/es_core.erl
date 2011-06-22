@@ -1,4 +1,5 @@
 -module(es_core).
+-include_lib("include/es_common.hrl").
 -import(core_server).
 -compile(export_all).
 
