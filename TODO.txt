@@ -27,6 +27,8 @@ $+ writing documentation
 #0 building a release (OTP in Action, chapter 10)
 
 Multi-user:
+*- spawn new process for each interface_server request
+*- Merge action_server and set_server into interface_server
 *- Add another upstream supervisor
 *+ Negotiate free IP ports
 *0 Start simulator children on demand
