@@ -1,5 +1,5 @@
+rebar
 *~
 *.beam
 priv/curvebook
-priv/python_unused
-src/unused
+.eunit
