@@ -39,7 +39,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 process_data(RawData, State, _Socket) ->
 %    io:format("~p~n", [RawData]),
     Buffer = State#interface_state.buffer,
-    {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R+$", [{capture, [1], list}]),
+    {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
     if
         Newline =:= match ->
 	    New_state = State#interface_state{buffer = Buffer ++ CleanData},
@@ -64,7 +64,13 @@ exec_call(State, Socket) ->
 %    io:format("Server sent: ~w~n", [Result]),
     ok.
 
-call({Server, Param, Args}) ->
+call({get, Server, Param}) ->
+    gen_server:call(Server, {get, Param});
+call({get, Server, Param, Args}) ->
     gen_server:call(Server, {get, Param, Args});
-call({Server, Param}) ->
-    gen_server:call(Server, {get, Param}).
+call({set, Server, Param, Args}) ->
+    gen_server:call(Server, {set, Param, Args});
+call({action, Server, Param}) ->
+    gen_server:call(Server, {action, Param});
+call({action, Server, Param, Args}) ->
+    gen_server:call(Server, {action, Param, Args}).

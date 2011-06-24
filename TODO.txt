@@ -28,11 +28,14 @@ $+ writing documentation
 
 Multi-user:
 *- spawn new process for each interface_server request
-*- Merge action_server and set_server into interface_server
 *- Add another upstream supervisor
 *+ Negotiate free IP ports
 *0 Start simulator children on demand
 *+ Ability to connect to existing simulator child
+
+Bugs:
+*- [34,228,228,228,228,34] = es_interface_client:send(S1, "{get, es_rod_position_server, control_position}\n") - remove quotes (34)
+
 
 LEGEND:
 

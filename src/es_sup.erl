@@ -44,18 +44,12 @@ init([]) ->
    Interface = {es_interface_server, {es_interface_server, start_link, [1056]},
       permanent, 2000, worker, [es_interface_server]},
    
-   Action_interface = {es_action_server, {es_action_server, start_link, [1057]},
-      permanent, 2000, worker, [es_action_server]},
-   
-   Set_interface = {es_set_server, {es_set_server, start_link, [1058]},
-      permanent, 2000, worker, [es_set_server]},
-   
    Turbine = {es_turbine_server, {es_turbine_server, start_link, []},
       temporary, 2000, worker, [es_turbine_server]},
    
    Ramper = {es_ramper_server, {es_ramper_server, start_link, []},
       temporary, 2000, worker, [es_ramper_server]},
    
-   Children = [Curvebook, Config, Clock, W7300, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface, Action_interface, Set_interface, Turbine, Ramper],
+   Children = [Curvebook, Config, Clock, W7300, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface, Turbine, Ramper],
    RestartStrategy = {one_for_one, 1, 2},
    {ok, {RestartStrategy, Children}}.
