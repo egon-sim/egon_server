@@ -1,6 +1,7 @@
 Protocol:
 #- {set, flux_now, Flux} and {set_now, flux, Flux} transform to {set, flux, Flux}
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
+#0 es_interface_server should keep a list of messages it can send to servers (gen_servers crash when they receive a message which they don't understand)
 
 General features:
 *- throw error if something is missing from priv dir
@@ -35,7 +36,6 @@ Multi-user:
 
 Bugs:
 *- [34,228,228,228,228,34] = es_interface_client:send(S1, "{get, es_rod_position_server, control_position}\n") - remove quotes (34)
-
 
 LEGEND:
 

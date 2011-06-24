@@ -1,7 +1,7 @@
 -module(es_interface_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
 -record(interface_state, {port, lsock, buffer}).
 
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
@@ -14,16 +14,43 @@ init([Port]) ->
 handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("~w ~n", [RawData]),
 %    io:format("server received a packet~n"),
-    New_state = process_data(RawData, State, Socket),
+
+%    New_state = process_data(RawData, State, Socket),
+
+    process_flag(trap_exit, true),
+    From = proc_lib:spawn_link(?MODULE, process_data, [RawData, State, Socket, self()]),
+%    io:format("spawned~n"),
+    receive
+        {ok, From, Reply} ->
+%	     io:format("received ok~n"),
+	     New_state = Reply,
+	     receive
+	         {'EXIT', From, normal} ->
+%		     io:format("received normal EXIT~n"),
+		     ok
+	     end;
+        {'EXIT', From, Reason} ->
+%	     io:format("received EXIT~n"),
+	     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{error, Reason}])),
+	     New_state = State#interface_state{buffer = []}
+    end,
+    process_flag(trap_exit, false),
 %    io:format("end packet parse~n"),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
     io:format("socket closed.~n"),
+%    Port = State#interface_state.port,
+%    Old_sock = State#interface_state.lsock,
+%    gen_tcp:close(Old_sock),
+%    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+%    io:format("socket restarted.~n"),
+%    {noreply, State#interface_state{lsock = LSock, buffer=[]}};
     {noreply, State};
     
 handle_info(timeout, #interface_state{lsock = LSock} = State) ->
     {ok, _Sock} = gen_tcp:accept(LSock),
+%    io:format("accepted"),
     {noreply, State}.
 
 handle_cast(stop, State) -> {stop, normal, State}.
@@ -35,6 +62,10 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+process_data(RawData, State, _Socket, Parent) ->
+    New_state = process_data(RawData, State, _Socket),
+    Parent ! {ok, self(), New_state}.
 
 process_data(RawData, State, _Socket) ->
 %    io:format("~p~n", [RawData]),
