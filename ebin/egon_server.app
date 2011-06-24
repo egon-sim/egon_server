@@ -23,9 +23,9 @@
       es_rod_position_server,
       es_set_server,
       es_sup,
-      es_tests,
       es_turbine,
       es_turbine_server,
+      es_util,
       es_w7300_server
 ]},
    {registered, []},
