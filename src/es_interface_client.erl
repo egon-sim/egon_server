@@ -15,5 +15,5 @@ send(Sock, Message) ->
     {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
     B.
 
-stop(Sock}) ->
+stop({Sock}) ->
     gen_tcp:close(Sock).
