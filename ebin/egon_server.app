@@ -3,7 +3,6 @@
    {vsn, "0.0.1"},
    {modules, [
       egon_server,
-      es_action_server,
       es_app,
       es_clock_server,
       es_config_server,
@@ -21,7 +20,7 @@
       es_rod_controller_server,
       es_rod_position,
       es_rod_position_server,
-      es_set_server,
+      es_server_supervisor,
       es_sup,
       es_turbine,
       es_turbine_server,

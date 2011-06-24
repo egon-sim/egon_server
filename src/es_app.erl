@@ -7,12 +7,13 @@
 ]).
 
 start(_Type, _StartArgs) ->
-   case es_sup:start_link(1056) of
+   case es_server_supervisor:start_link() of
       {ok, Pid} ->
          Retval = {ok, Pid};
       Other ->
          Retval = {error, Other}
    end,
+   es_server_supervisor:start_child(1056),
    Retval.
 
 stop(_State) ->

@@ -30,7 +30,6 @@ $+ writing documentation
 
 Multi-user:
 *- spawn new process for each interface_server request
-*- Add another upstream supervisor
 *0 Start simulator children on demand and transfer the socket to it
 *+ Ability to connect to existing simulator child
 
