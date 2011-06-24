@@ -1,4 +1,4 @@
--module(es_tests).
+-module(es_util).
 -import(eunit).
 -compile(export_all).
 
