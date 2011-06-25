@@ -39,14 +39,17 @@ handle_info({tcp, Socket, RawData}, State) ->
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
+    io:format("starting: socket closed.~n"),
+    Port = State#interface_state.port,
+    Old_sock = State#interface_state.lsock,
+    gen_tcp:close(Old_sock),
     io:format("socket closed.~n"),
-%    Port = State#interface_state.port,
-%    Old_sock = State#interface_state.lsock,
-%    gen_tcp:close(Old_sock),
-%    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("socket restarted.~n"),
-%    {noreply, State#interface_state{lsock = LSock, buffer=[]}};
-    {noreply, State};
+    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+    io:format("socket listening.~n"),
+    {ok, _Sock} = gen_tcp:accept(LSock),
+    io:format("socket restarted.~n"),
+    {noreply, State#interface_state{lsock = LSock, buffer=[]}};
+%    {noreply, State};
     
 handle_info(timeout, #interface_state{lsock = LSock} = State) ->
     {ok, _Sock} = gen_tcp:accept(LSock),
