@@ -16,6 +16,3 @@ run() ->
 
 pause() ->
     gen_server:call(es_config_server, {freaze_sim}).
-
-load() ->
-    gen_server:call(es_config_server, {load_config}).

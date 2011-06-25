@@ -4,8 +4,10 @@
 -compile(export_all).
 
 start() ->
+    start(1056).
+
+start(PortNo) ->
     Host = "localhost",
-    PortNo = 1056,
     {ok,Sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
     Sock.
 
