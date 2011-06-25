@@ -21,6 +21,7 @@ $+ move hardcoded setpoints from es_rod_controller_server:rod_speed to curvebook
 Erlang/OTP problem:
 #? errors in snapshot file do not generate error report
 #? if two gen_tcp servers listen on the same port, they fail silently
+#? if supervisor fails to start it's children, no error is generated
 
 Userfriendlyness:
 $+ writing unit tests

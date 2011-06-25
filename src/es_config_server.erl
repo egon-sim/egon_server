@@ -7,11 +7,7 @@
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) -> 
-    {ok, #config_state{}}.
-
-handle_call({load_config}, _From, State) ->
-    set_up_defaults(),
-    {reply, ok, State};
+    {ok, #config_state{}, 0}.
 
 handle_call({freaze_sim}, _From, State) ->
     {reply, gen_server:call(es_clock_server, {stop_ticking}), State};
@@ -24,6 +20,12 @@ handle_call(stop, _From, State) ->
 
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
 handle_cast(_Msg, State) -> {noreply, State}.
+
+handle_info(timeout, State) ->
+    supervisor:which_children(es_sup),
+    set_up_defaults(),    
+    {noreply, State};
+
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
@@ -31,9 +33,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 set_up_defaults() ->
-    timer:sleep(500),
     load_snapshot("priv/snapshots/full_power.snapshot"),
-    timer:sleep(500),
     gen_server:call(es_clock_server, {start_ticking}),
     ok.
 
