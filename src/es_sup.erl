@@ -10,10 +10,10 @@
 
 -define(SERVER, ?MODULE).
 
-start_link(Port) ->
-   supervisor:start_link({local, ?SERVER}, ?MODULE, [Port]).
+start_link(Connection) ->
+   supervisor:start_link({local, ?SERVER}, ?MODULE, [Connection]).
 
-init([Port]) ->
+init([Connection]) ->
    Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, []},
       temporary, 2000, worker, [es_curvebook_server]},
    
@@ -41,7 +41,7 @@ init([Port]) ->
    Rod_controller = {es_rod_controller_server, {es_rod_controller_server, start_link, []},
       temporary, 2000, worker, [es_rod_controller_server]},
    
-   Interface = {es_interface_server, {es_interface_server, start_link, [Port]},
+   Interface = {es_interface_server, {es_interface_server, start_link, [Connection]},
       permanent, 2000, worker, [es_interface_server]},
    
    Turbine = {es_turbine_server, {es_turbine_server, start_link, []},
