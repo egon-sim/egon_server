@@ -7,10 +7,9 @@
 start_link(Connection) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Connection], []).
 
 init([{reply_sock, Reply_socket}]) -> 
-    Port = 1057,
-%    io:format("interface server opening port ~p... ", [Port]),
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("server listening on port ~p.~n", [Port]),
+    {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
+    {ok, Port} = inet:port(LSock),
+    io:format("server listening on port ~p.~n", [Port]),
     {ok, #interface_state{port = Port, lsock = LSock, rsock = Reply_socket, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
