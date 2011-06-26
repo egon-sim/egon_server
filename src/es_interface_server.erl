@@ -2,14 +2,16 @@
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
--record(interface_state, {port, lsock, buffer}).
+-record(interface_state, {port, lsock, buffer, rsock}).
 
-start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
+start_link(Connection) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Connection], []).
 
-init([Port]) -> 
+init([{reply_sock, Reply_socket}]) -> 
+    Port = 1057,
+%    io:format("interface server opening port ~p... ", [Port]),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("server listening...~n"),
-    {ok, #interface_state{port = Port, lsock = LSock, buffer=[]}, 0}.
+%    io:format("server listening on port ~p.~n", [Port]),
+    {ok, #interface_state{port = Port, lsock = LSock, rsock = Reply_socket, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("~w ~n", [RawData]),
@@ -39,19 +41,22 @@ handle_info({tcp, Socket, RawData}, State) ->
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
-    io:format("starting: socket closed.~n"),
+%    io:format("starting: socket closed.~n"),
     Port = State#interface_state.port,
     Old_sock = State#interface_state.lsock,
     gen_tcp:close(Old_sock),
-    io:format("socket closed.~n"),
+%    io:format("socket closed.~n"),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-    io:format("socket listening.~n"),
+%    io:format("socket listening.~n"),
     {ok, _Sock} = gen_tcp:accept(LSock),
-    io:format("socket restarted.~n"),
+%    io:format("socket restarted.~n"),
     {noreply, State#interface_state{lsock = LSock, buffer=[]}};
 %    {noreply, State};
     
 handle_info(timeout, #interface_state{lsock = LSock} = State) ->
+    Reply_socket = State#interface_state.rsock,
+    Port = State#interface_state.port,
+    gen_server:call(es_connection_server, {relay_port, Reply_socket, Port}),
     {ok, _Sock} = gen_tcp:accept(LSock),
 %    io:format("accepted"),
     {noreply, State}.

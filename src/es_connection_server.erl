@@ -39,26 +39,33 @@ handle_info({tcp, Socket, RawData}, State) ->
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
-    io:format("starting: socket closed.~n"),
+%    io:format("starting: socket closed.~n"),
     Port = State#connection_state.port,
     Old_sock = State#connection_state.lsock,
     gen_tcp:close(Old_sock),
-    io:format("socket closed.~n"),
+%    io:format("socket closed.~n"),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-    io:format("socket listening.~n"),
+%    io:format("socket listening.~n"),
     {ok, _Sock} = gen_tcp:accept(LSock),
     io:format("socket restarted.~n"),
     {noreply, State#connection_state{lsock = LSock, buffer=[]}};
 %    {noreply, State};
     
 handle_info(timeout, #connection_state{lsock = LSock} = State) ->
+%    io:format("accepting... "),
     {ok, _Sock} = gen_tcp:accept(LSock),
-%    io:format("accepted"),
+%    io:format("accepted~n"),
     {noreply, State}.
 
 handle_cast(stop, State) -> {stop, normal, State}.
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
+handle_call({relay_port, Socket, Port}, _From, State) -> 
+    Result = {started, Port},
+    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
+%    io:format("Server sent: ~w~n", [Result]),
+    {reply, ok, State}.
+
+%handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
@@ -93,20 +100,21 @@ exec_call(State, Socket) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 
-    Result = case Args of
+    case Args of
         {ask, start_new_simulator} ->
-	    start_new_simulator();
+	    start_new_simulator(Socket);
         {ask, connect_to_simulator, Sim} ->
 	    connect_to_simulator(Sim)
     end,
-    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
-%    io:format("Server sent: ~w~n", [Result]),
     ok.
 
 
-start_new_simulator() ->
-    Port = es_server_supervisor:start_child(),
-    {started, Port}.
+start_new_simulator(Reply_socket) ->
+%    io:format("starting children... "),
+    es_server_supervisor:start_child({reply_sock, Reply_socket}),
+%    io:format("done.~n"),
+    ok.
 
 connect_to_simulator(Sim) ->
     {connected_to, Sim}.
+
