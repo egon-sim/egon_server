@@ -9,6 +9,12 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 init([]) -> 
     {ok, #config_state{}, 0}.
 
+handle_call({get, runing_servers_list}, _From, State) ->
+    W = supervisor:which_children(es_sup),
+    F = lists:filter(fun({_, Def, _, _}) -> is_pid(Def) end, W),
+    L = lists:map(fun({Name, _, _, _}) -> Name end, W),
+    {reply, L, State};
+
 handle_call({freaze_sim}, _From, State) ->
     {reply, gen_server:call(es_clock_server, {stop_ticking}), State};
 
