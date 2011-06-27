@@ -6,6 +6,7 @@ Protocol:
 
 General features:
 *- throw error if something is missing from priv dir
+*- es_config_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
 *0 logger server: tracking parameters and storing them
 $- es_action_server should log it's actions
