@@ -7,7 +7,7 @@
 ]).
 
 start(_Type, _StartArgs) ->
-   case es_sup_sup:start_link() of
+   case es_sup:start_link() of
       {ok, Pid} ->
          {ok, Pid};
       Other ->

@@ -1,4 +1,4 @@
--module(es_server_supervisor).
+-module(es_simulator_dispatcher).
 -include_lib("include/es_common.hrl").
 -behaviour(supervisor).
 -export([start_link/0, start_child/1, init/1]).

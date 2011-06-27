@@ -111,7 +111,7 @@ exec_call(State, Socket) ->
 
 start_new_simulator(Reply_socket) ->
 %    io:format("starting children... "),
-    es_server_supervisor:start_child({reply_sock, Reply_socket}),
+    es_simulator_dispatcher:start_child({reply_sock, Reply_socket}),
 %    io:format("done.~n"),
     ok.
 
