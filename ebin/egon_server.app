@@ -23,6 +23,7 @@
       es_rod_position_server,
       es_simulator_dispatcher,
       es_simulator_sup,
+      es_simulator_tracker_server,
       es_sup,
       es_turbine,
       es_turbine_server,
