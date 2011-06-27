@@ -14,7 +14,7 @@ start_child(Connection) ->
     supervisor:start_child(?SERVER, [Connection]).
 
 init([]) -> 
-    Simulator = {es_sup, {es_sup, start_link, []}, temporary, 2000, supervisor, [es_sup]},
+    Simulator = {es_simulator_sup, {es_simulator_sup, start_link, []}, temporary, 2000, supervisor, [es_simulator_sup]},
     Children = [Simulator],
     Restart_strategy = {simple_one_for_one, 0, 1},
     {ok, {Restart_strategy, Children}}.

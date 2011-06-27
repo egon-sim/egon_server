@@ -22,7 +22,7 @@
       es_rod_position,
       es_rod_position_server,
       es_server_supervisor,
-      es_sup,
+      es_simulator_sup,
       es_sup_sup,
       es_turbine,
       es_turbine_server,

@@ -1,4 +1,4 @@
--module(es_sup).
+-module(es_simulator_sup).
 -include_lib("include/es_common.hrl").
 -behaviour(supervisor).
 

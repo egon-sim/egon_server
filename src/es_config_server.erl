@@ -10,7 +10,7 @@ init([]) ->
     {ok, #config_state{}, 0}.
 
 handle_call({get, runing_servers_list}, _From, State) ->
-    W = supervisor:which_children(es_sup),
+    W = supervisor:which_children(es_simulator_sup),
     F = lists:filter(fun({_, Def, _, _}) -> is_pid(Def) end, W),
     L = lists:map(fun({Name, _, _, _}) -> Name end, W),
     {reply, L, State};
@@ -28,7 +28,7 @@ handle_call(stop, _From, State) ->
 handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_info(timeout, State) ->
-    supervisor:which_children(es_sup),
+    supervisor:which_children(es_simulator_sup),
     set_up_defaults(),    
     {noreply, State};
 
