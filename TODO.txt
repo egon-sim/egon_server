@@ -37,7 +37,7 @@ Multi-user:
 
 Bugs:
 *- [34,228,228,228,228,34] = es_interface_client:send(S1, "{get, es_rod_position_server, control_position}\n") - remove quotes (34)
-
+* remove all mention of ports
 
 LEGEND:
 
