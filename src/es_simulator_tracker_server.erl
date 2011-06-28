@@ -9,9 +9,17 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 init([]) -> 
     {ok, #tracker_state{simulators = []}}.
 
-handle_call({add, simulator, Val}, _From, State) -> 
+handle_call({start_simulator, Connection}, _From, State) -> 
     Sims = State#tracker_state.simulators,
-    {reply, ok, #tracker_state{simulators = [Val|Sims]}};
+
+    if
+        Sims == [] ->
+	    SimId = 1;
+	true ->
+	    SimId = lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
+    end,
+    {ok, Child} = es_simulator_dispatcher:start_child(SimId, Connection),
+    {reply, ok, #tracker_state{simulators = [{SimId, Child}|Sims]}};
 
 handle_call({get, simulators}, _From, State) -> 
     {reply, State#tracker_state.simulators, State}.
