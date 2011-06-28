@@ -16,3 +16,13 @@ run() ->
 
 pause() ->
     gen_server:call(es_config_server, {freaze_sim}).
+
+general_test() ->
+    ok = egon_server:start(),
+    {ok,_} = es_interface_client:start(),
+    ok = es_interface_client:new_sim(),
+    "305.0" = es_interface_client:send("{get, es_core_server, tavg}"),
+    "305.0" = es_interface_client:send("{get, es_w7300_server, tref}"),
+    "ok" = es_interface_client:send("{action, es_rod_position_server, step_in}"),
+    "304.9416710346633" = es_interface_client:send("{get, es_core_server, tavg}"),
+    ok.
