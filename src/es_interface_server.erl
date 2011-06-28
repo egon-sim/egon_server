@@ -1,16 +1,16 @@
 -module(es_interface_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
--record(interface_state, {port, lsock, buffer, rsock}).
+-export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
+-record(interface_state, {simid, port, lsock, buffer, rsock}).
 
-start_link(Connection) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Connection], []).
+start_link(SimId, Connection) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId, Connection], []).
 
-init([{reply_sock, Reply_socket}]) -> 
+init([SimId, {reply_sock, Reply_socket}]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
     {ok, Port} = inet:port(LSock),
     io:format("server listening on port ~p.~n", [Port]),
-    {ok, #interface_state{port = Port, lsock = LSock, rsock = Reply_socket, buffer=[]}, 0}.
+    {ok, #interface_state{simid = SimId, port = Port, lsock = LSock, rsock = Reply_socket, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("~w ~n", [RawData]),

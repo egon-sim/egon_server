@@ -2,8 +2,8 @@
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
 -import(timer).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(flux_buffer_state, {target, cycle_len, flux_diff_per_cycle}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(flux_buffer_state, {simid, target, cycle_len, flux_diff_per_cycle}).
 
 config_list(State) -> [
 {cycle_len, State#flux_buffer_state.cycle_len},
@@ -19,11 +19,11 @@ status([Head | Tail], State) ->
 status([], _State) ->
     ok.    
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) -> 
+init([SimId]) -> 
     gen_server:call(es_clock_server, {add_listener, ?MODULE}),
-    {ok, #flux_buffer_state{target=undef}}.
+    {ok, #flux_buffer_state{simid = SimId, target=undef}}.
 
 handle_call({get, cycle_len}, _From, State) ->
     {reply, State#flux_buffer_state.cycle_len, State};

@@ -1,15 +1,15 @@
 -module(es_rod_position_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(rod_position_state, {control_position_counter, control_group_position, control_rod_stops, overlap, shutdown_group_position, shutdown_position_counter}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(rod_position_state, {simid, control_position_counter, control_group_position, control_rod_stops, overlap, shutdown_group_position, shutdown_position_counter}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) -> 
+init([SimId]) -> 
     Control_rod_stops = gen_server:call(es_curvebook_server, {get, pls, [control_rod_stops]}),
     Overlap = gen_server:call(es_curvebook_server, {get, pls, [overlap]}),
-    {ok, #rod_position_state{control_rod_stops = Control_rod_stops, overlap = Overlap}}.
+    {ok, #rod_position_state{simid = SimId, control_rod_stops = Control_rod_stops, overlap = Overlap}}.
 
 handle_call({get, control_position_counter}, _From, State) ->
     {reply, State#rod_position_state.control_position_counter, State};

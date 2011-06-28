@@ -1,10 +1,10 @@
 -module(es_makeup_buffer_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(makeup_buffer_state, {buffers, cycle_len, boron_diff_per_cycle}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(makeup_buffer_state, {simid, buffers, cycle_len, boron_diff_per_cycle}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
 boron_diff(RCS, TNK, VADD, WADD, W) ->
     (TNK - RCS) * (1 - math:exp(-VADD*WADD/W)).
@@ -23,9 +23,9 @@ bor_dil([{Action, Diff} | Rest]) ->
     end,
     New_buffers.
    
-init([]) -> 
+init([SimId]) -> 
     gen_server:call(es_clock_server, {add_listener, ?MODULE}),
-    {ok, #makeup_buffer_state{buffers=[]}}.
+    {ok, #makeup_buffer_state{simid = SimId, buffers=[]}}.
 
 handle_call({get, buffers}, _From, State) ->
     {reply, State#makeup_buffer_state.buffers, State};

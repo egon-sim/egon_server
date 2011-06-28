@@ -1,15 +1,15 @@
 -module(es_curvebook_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(curvebook_state, {power_defect, boron_worth, mtc, critical_boron, rod_worth, pls}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, pls}).
 -compile(export_all).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) -> 
+init([SimId]) -> 
     {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} = fill_curvebook(),
-    {ok, #curvebook_state{power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}}.
+    {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}}.
 
 handle_call({get, power_defect, Key}, _From, State) ->
     {reply, lookup(State#curvebook_state.power_defect, Key), State};

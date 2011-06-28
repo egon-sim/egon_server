@@ -2,15 +2,15 @@
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
 -import(es_convert).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(rod_controller_state, {mode, speed, manual_speed, ticks_per_second, ticks_left}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(rod_controller_state, {simid, mode, speed, manual_speed, ticks_per_second, ticks_left}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) -> 
+init([SimId]) -> 
     gen_server:call(es_clock_server, {add_listener, ?MODULE}),
     Manual_speed = gen_server:call(es_curvebook_server, {get, pls, [speed_of_rods_in_manual]}),
-    {ok, #rod_controller_state{speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
+    {ok, #rod_controller_state{simid = SimId, speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
 
 handle_call({get, speed}, _From, State) ->
     {reply, State#rod_controller_state.speed, State};

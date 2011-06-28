@@ -1,13 +1,13 @@
 -module(es_ramper_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(ramper_state, {turbine, target, rate, direction}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(ramper_state, {simid, turbine, target, rate, direction}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) ->
-    {ok, #ramper_state{turbine=es_turbine_server, target=none, rate=none, direction=none}}.
+init([SimId]) ->
+    {ok, #ramper_state{simid = SimId, turbine=es_turbine_server, target=none, rate=none, direction=none}}.
 
 stop(Target, Rate) ->
     ok = gen_server:call(es_turbine_server, {action, ramp, stop}),

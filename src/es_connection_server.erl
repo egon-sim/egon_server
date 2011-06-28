@@ -111,7 +111,8 @@ exec_call(State, Socket) ->
 
 start_new_simulator(Reply_socket) ->
 %    io:format("starting children... "),
-    Child = es_simulator_dispatcher:start_child({reply_sock, Reply_socket}),
+    SimId = 1,
+    Child = es_simulator_dispatcher:start_child(SimId, {reply_sock, Reply_socket}),
     gen_server:call(es_simulator_tracker_server, {add, simulator, Child}),
 %    io:format("done.~n"),
     ok.

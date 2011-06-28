@@ -1,14 +1,14 @@
 -module(es_core_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(core_state, {port, flux_buffer, boron, burnup, flux}).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(core_state, {simid, port, flux_buffer, boron, burnup, flux}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([]) -> 
+init([SimId]) -> 
     Buffer = es_flux_buffer_server,
-    {ok, #core_state{port=core_port, flux_buffer=Buffer}}.
+    {ok, #core_state{simid = SimId, port=core_port, flux_buffer=Buffer}}.
 
 handle_call({get, boron}, _From, State) ->
     {reply, State#core_state.boron, State};
