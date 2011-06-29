@@ -1,4 +1,4 @@
--module(es_interface_client).
+-module(egon_client).
 -include_lib("include/es_common.hrl").
 -import(re).
 -behaviour(gen_server).
@@ -22,7 +22,6 @@ handle_call({send, Message}, _From, State) ->
 handle_call({switch_port, PortNo}, _From, State) -> 
     Sock = State#client_state.sock,
     gen_tcp:close(Sock),
-
     Host = State#client_state.host,
     {ok, New_sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
     {reply, ok, State#client_state{sock = New_sock, port = PortNo}};
@@ -46,8 +45,16 @@ start() ->
     start_link("localhost", 1055).
 
 new_sim() ->
-    {started, Port} = parse(send("{ask, start_new_simulator}")),
-    gen_server:call(?MODULE, {switch_port, Port}).
+    case parse(send("{ask, start_new_simulator}")) of
+        {started, Port} ->
+	    gen_server:call(?MODULE, {switch_port, Port});
+	{error_starting_child} ->
+	    io:format("Starting new simulator failed.~n"),
+	    {error, shutdown};
+	{unknown_error, Error} ->
+	    io:format("Unknown error: ~p.~n", [Error]),
+	    {unknown_error, Error}
+    end.
 
 send(Message) ->
     gen_server:call(?MODULE, {send, Message}).

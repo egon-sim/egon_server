@@ -3,6 +3,7 @@
    {vsn, "0.0.1"},
    {modules, [
       egon_server,
+      egon_client,
       es_app,
       es_clock_server,
       es_config_server,
@@ -12,7 +13,6 @@
       es_core_server, 
       es_curvebook_server,
       es_flux_buffer_server, 
-      es_interface_client,
       es_interface_server,
       es_makeup_buffer_server, 
       es_ramper_server,

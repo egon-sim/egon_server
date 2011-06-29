@@ -1,5 +1,6 @@
 -module(es_simulator_tracker_server).
 -include_lib("include/es_common.hrl").
+-import(io_lib).
 -behaviour(gen_server).
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(tracker_state, {simulators}).
@@ -18,8 +19,20 @@ handle_call({start_simulator, Connection}, _From, State) ->
 	true ->
 	    SimId = lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
     end,
-    {ok, Child} = es_simulator_dispatcher:start_child(SimId, Connection),
-    {reply, ok, #tracker_state{simulators = [{SimId, Child}|Sims]}};
+    case es_simulator_dispatcher:start_child(SimId, Connection) of
+        {ok, Child} ->
+	    {reply, ok, State#tracker_state{simulators = [{SimId, Child}|Sims]}};
+	{error, shutdown} ->
+	    io:format("Starting child failed.~n"),
+	    {reply_sock, Socket} = Connection,
+	    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{error_starting_child}])),
+	    {reply, {error, shutdown}, State};
+	Other ->
+	    io:format("Other: ~p", [Other]),
+	    {reply_sock, Socket} = Connection,
+	    gen_tcp:send(Socket, io_lib:fwrite("{unknown_error, ~p}~n", [Other])),
+	    {reply, Other, State}
+    end;
 
 handle_call({get, simulators}, _From, State) -> 
     {reply, State#tracker_state.simulators, State}.
