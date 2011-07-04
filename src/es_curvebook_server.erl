@@ -90,7 +90,7 @@ fill_pls(Path) ->
     Table.
 
 sort_table(Table) when not is_list(Table) ->
-    {error, notable};
+    Table;
 
 sort_table(Table) when is_list(Table) ->
     Sorted_table = lists:map(fun(T) -> {element(1, T), sort_table(element(2, T))} end, Table),
@@ -140,6 +140,11 @@ calculate(Table, Key, Lo, Hi) ->
    Val_Hi = lookup(Rest_Hi, Rest),
 %   io:format("head: ~p~n", [{Head_Lo, Head_Hi}]),
 %   io:format("calculate: ~p~n", [{Val_Lo, Val_Hi}]),
-   Ratio = (Head - Head_Lo) / (Head_Hi - Head_Lo),
-   Val = Ratio * (Val_Hi - Val_Lo) + Val_Lo,
-   Val.
+   if
+       is_number(Val_Lo) and is_number(Val_Hi) ->
+          Ratio = (Head - Head_Lo) / (Head_Hi - Head_Lo),
+	  Val = Ratio * (Val_Hi - Val_Lo) + Val_Lo,
+	  Val;
+       true ->
+          {error, value_not_number}
+   end.
