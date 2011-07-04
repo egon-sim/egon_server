@@ -61,7 +61,7 @@ fill_curvebook(Path) ->
    	  Rod_worth = fill_table(Dir ++ "rod_worth.ets"),
    	  Pls = fill_pls(Dir ++ "pls.ets"),
 	  Tables = [Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls],
-	  Tables_OK = lists:all(fun(T) -> lists:is_list(T) end, Tables),
+	  Tables_OK = lists:all(fun(T) -> is_list(T) end, Tables),
 	  if 
 	     Tables_OK ->
    	        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls};
