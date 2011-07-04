@@ -2,6 +2,7 @@
 -compile(export_all).
 
 start() ->
+    application:start(sasl),
     application:start(egon_server).
 
 stop() ->
