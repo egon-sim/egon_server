@@ -12,7 +12,7 @@ init([SimId]) ->
         {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} ->
             {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}};
         {error, _} ->
-	    {error}
+            {error}
     end.
 
 handle_call({get, power_defect, Key}, _From, State) ->
@@ -48,30 +48,30 @@ fill_curvebook() ->
     fill_curvebook("curvebook/").
 
 fill_curvebook(Path) ->
-%   Dir = code:priv_dir(egon_server) ++ "curvebook/",
-   Dir = "priv/" ++ Path,
-%   io:format("~p~n", [Dir]),
-   Is_dir = filelib:is_dir(Dir),
-   if
-       Is_dir ->
-          Power_defect = fill_table(Dir ++ "power_defect.ets"),
-   	  Boron_worth = fill_table(Dir ++ "boron_worth.ets"),
-	  MTC = fill_table(Dir ++ "MTC.ets"),
-   	  Critical_boron = fill_table(Dir ++ "critical_boron.ets"),
-   	  Rod_worth = fill_table(Dir ++ "rod_worth.ets"),
-   	  Pls = fill_pls(Dir ++ "pls.ets"),
-	  Tables = [Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls],
-	  Tables_OK = lists:all(fun(T) -> is_list(T) end, Tables),
-	  if 
-	     Tables_OK ->
-   	        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls};
-	     true ->
-	        {error, corrupt_curvebook}
-	  end;
-       true ->
-          io:format("Error: curvebook directory ~p does not exist.~n", [Dir]),
-          {error, no_directory}
-   end.
+%    Dir = code:priv_dir(egon_server) ++ "curvebook/",
+    Dir = "priv/" ++ Path,
+%    io:format("~p~n", [Dir]),
+    Is_dir = filelib:is_dir(Dir),
+    if
+        Is_dir ->
+            Power_defect = fill_table(Dir ++ "power_defect.ets"),
+    	    Boron_worth = fill_table(Dir ++ "boron_worth.ets"),
+	    MTC = fill_table(Dir ++ "MTC.ets"),
+   	    Critical_boron = fill_table(Dir ++ "critical_boron.ets"),
+   	    Rod_worth = fill_table(Dir ++ "rod_worth.ets"),
+   	    Pls = fill_pls(Dir ++ "pls.ets"),
+	    Tables = [Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls],
+	    Tables_OK = lists:all(fun(T) -> is_list(T) end, Tables),
+	    if 
+	        Tables_OK ->
+   	            {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls};
+	     	true ->
+	            {error, corrupt_curvebook}
+	    end;
+        true ->
+            io:format("Error: curvebook directory ~p does not exist.~n", [Dir]),
+            {error, no_directory}
+    end.
 
 fill_table(Path) ->
     case file:consult(Path) of
@@ -98,53 +98,53 @@ sort_table(Table) when is_list(Table) ->
 
 lookup(T, []) ->
 %   io:format("lookup: []~n"),
-   T;
+    T;
 lookup(Table, Key) ->
-%   io:format("lookup: ~p~n", [Key]),
-   [Head|Rest] = Key,
-   case lists:keymember(Head, 1, Table) of
-      true ->
-         {value, {_, Val}} = lists:keysearch(Head, 1, Table),
-	 lookup(Val, Rest);
-      false ->
-         interpolate(Table, Key)
-   end.
+%    io:format("lookup: ~p~n", [Key]),
+    [Head|Rest] = Key,
+    case lists:keymember(Head, 1, Table) of
+        true ->
+            {value, {_, Val}} = lists:keysearch(Head, 1, Table),
+	    lookup(Val, Rest);
+        false ->
+            interpolate(Table, Key)
+    end.
 
 interpolate(Table, Key) ->
-   interpolate(Table, Key, 1, length(Table)).
+    interpolate(Table, Key, 1, length(Table)).
 
 interpolate(Table, Key, Start, End) ->
-%   io:format("interpolate: ~p~n", [Key]),
-   Middle = (Start + End) div 2,
-   [Head|_] = Key,
-   {New_head, Val} = lists:nth(Middle, Table),
-%   io:format("start-end: ~p~n", [{Start, Middle, End}]),
-%   io:format("heads: ~p~n", [{Head, New_head}]),
-   if
-      Start == End ->
-        Val;
-      Start + 1 == End ->
-        calculate(Table, Key, Start, End);
-      Head < New_head ->
-         interpolate(Table, Key, Start, Middle);
-      New_head < Head ->
-         interpolate(Table, Key, Middle, End)
-   end.
+%    io:format("interpolate: ~p~n", [Key]),
+    Middle = (Start + End) div 2,
+    [Head|_] = Key,
+    {New_head, Val} = lists:nth(Middle, Table),
+%    io:format("start-end: ~p~n", [{Start, Middle, End}]),
+%    io:format("heads: ~p~n", [{Head, New_head}]),
+    if
+        Start == End ->
+            Val;
+        Start + 1 == End ->
+            calculate(Table, Key, Start, End);
+        Head < New_head ->
+            interpolate(Table, Key, Start, Middle);
+        New_head < Head ->
+            interpolate(Table, Key, Middle, End)
+    end.
 
 calculate(Table, Key, Lo, Hi) ->
-%   io:format("calculate: ~p~n", [[0|Key]]),
-   [Head|Rest] = Key,
-   {Head_Lo, Rest_Lo} = lists:nth(Lo, Table),
-   {Head_Hi, Rest_Hi} = lists:nth(Hi, Table),
-   Val_Lo = lookup(Rest_Lo, Rest),
-   Val_Hi = lookup(Rest_Hi, Rest),
-%   io:format("head: ~p~n", [{Head_Lo, Head_Hi}]),
-%   io:format("calculate: ~p~n", [{Val_Lo, Val_Hi}]),
-   if
-       is_number(Val_Lo) and is_number(Val_Hi) ->
-          Ratio = (Head - Head_Lo) / (Head_Hi - Head_Lo),
-	  Val = Ratio * (Val_Hi - Val_Lo) + Val_Lo,
-	  Val;
-       true ->
-          {error, value_not_number}
-   end.
+%    io:format("calculate: ~p~n", [[0|Key]]),
+    [Head|Rest] = Key,
+    {Head_Lo, Rest_Lo} = lists:nth(Lo, Table),
+    {Head_Hi, Rest_Hi} = lists:nth(Hi, Table),
+    Val_Lo = lookup(Rest_Lo, Rest),
+    Val_Hi = lookup(Rest_Hi, Rest),
+%    io:format("head: ~p~n", [{Head_Lo, Head_Hi}]),
+%    io:format("calculate: ~p~n", [{Val_Lo, Val_Hi}]),
+    if
+        is_number(Val_Lo) and is_number(Val_Hi) ->
+            Ratio = (Head - Head_Lo) / (Head_Hi - Head_Lo),
+	    Val = Ratio * (Val_Hi - Val_Lo) + Val_Lo,
+	    Val;
+        true ->
+            {error, value_not_number}
+    end.
