@@ -56,6 +56,19 @@ new_sim() ->
 	    {unknown_error, Error}
     end.
 
+conn_to_sim(Id) ->
+    case parse(send("{ask, connect_to_simulator, " ++ integer_to_list(Id) ++ "}")) of
+        {connected, Port} ->
+	    io:format("Simulator with id ~p is listening on port ~p.", [Id, Port]);
+	    %gen_server:call(?MODULE, {switch_port, Port});
+	{error, no_such_sim} ->
+	    io:format("There is no simulator with id " ++ integer_to_list(Id) ++ ".~n"),
+	    {error, no_such_sim};
+	{unknown_error, Error} ->
+	    io:format("Unknown error: ~p.~n", [Error]),
+	    {unknown_error, Error}
+    end.
+
 send(Message) ->
     gen_server:call(?MODULE, {send, Message}).
 
