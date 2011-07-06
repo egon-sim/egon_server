@@ -1,5 +1,6 @@
-rebar
+rebar*
 *~
 *.beam
 priv/curvebook
 .eunit
+logs/*
