@@ -9,6 +9,7 @@ General features:
 *- es_config_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
 *0 logger server: tracking parameters and storing them
+*0 es_clock_server should send ticks as gen_server:cast()
 $- es_action_server should log it's actions
 #+ logging everthing
 #0 changing simulation speed
