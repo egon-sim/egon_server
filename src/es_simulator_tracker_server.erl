@@ -21,7 +21,7 @@ handle_call({start_simulator, Connection}, _From, State) ->
     end,
     case es_simulator_dispatcher:start_child(SimId, Connection) of
         {ok, Child} ->
-	    {reply, ok, State#tracker_state{simulators = [{SimId, Child}|Sims]}};
+	    {reply, ok, State#tracker_state{simulators = [{SimId, Child, unknown}|Sims]}};
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
 	    {reply_sock, Socket} = Connection,
@@ -34,6 +34,26 @@ handle_call({start_simulator, Connection}, _From, State) ->
 	    {reply, Other, State}
     end;
 
+handle_call({connect_to_simulator, Sim, Connection}, _From, State) -> 
+    Sims = State#tracker_state.simulators,
+
+    {FoundSim, _} = lists:partition(fun({S, _, _}) -> S == Sim end, Sims),
+    if
+        length(FoundSim) == 1 ->
+	    {reply, {ok, FoundSim}, State};
+        length(FoundSim) == 0 ->
+	    {reply, {error, no_such_id}, State};
+        length(FoundSim) > 1 ->
+	    {reply, {error, id_not_unique}, State};
+        true ->
+	    {reply, {error, other}, State}
+    end;
+
+handle_call({update_port, SimId, Port}, _From, State) -> 
+    Sims = State#tracker_state.simulators,
+    New_sims = update_sims(Sims, SimId, Port),
+    {reply, ok, State#tracker_state{simulators = New_sims}};
+
 handle_call({get, simulators}, _From, State) -> 
     {reply, State#tracker_state.simulators, State}.
 
@@ -42,3 +62,15 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+update_sims([], _, _) ->
+    [];
+
+update_sims([{SimId, Child, _}|Rest], SimId, Port) ->
+    [{SimId, Child, Port}|Rest];
+
+update_sims([Sim|Rest], SimId, Port) ->
+    [Sim|update_sims(Rest, SimId, Port)].

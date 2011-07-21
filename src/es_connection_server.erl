@@ -59,8 +59,9 @@ handle_info(timeout, #connection_state{lsock = LSock} = State) ->
 
 handle_cast(stop, State) -> {stop, normal, State}.
 
-handle_call({relay_port, Socket, Port}, _From, State) -> 
+handle_call({relay_port, SimId, Socket, Port}, _From, State) -> 
     Result = {started, Port},
+    gen_server:call(es_simulator_tracker_server, {update_port, SimId, Port}),
     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
 %    io:format("Server sent: ~w~n", [Result]),
     {reply, ok, State}.
@@ -104,7 +105,7 @@ exec_call(State, Socket) ->
         {ask, start_new_simulator} ->
 	    start_new_simulator(Socket);
         {ask, connect_to_simulator, Sim} ->
-	    connect_to_simulator(Sim)
+	    connect_to_simulator(Sim, Socket)
     end,
     ok.
 
@@ -115,6 +116,8 @@ start_new_simulator(Reply_socket) ->
 %    io:format("done.~n"),
     ok.
 
-connect_to_simulator(Sim) ->
-    {connected_to, Sim}.
+connect_to_simulator(Sim, Socket) ->
+    {ok, [{Sim, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Sim, {reply_sock, Socket}}),
+    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{connected, Port}])),
+    ok.
 

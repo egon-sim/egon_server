@@ -55,7 +55,8 @@ handle_info({tcp_closed, _Socket}, State) ->
 handle_info(timeout, #interface_state{lsock = LSock} = State) ->
     Reply_socket = State#interface_state.rsock,
     Port = State#interface_state.port,
-    gen_server:call(es_connection_server, {relay_port, Reply_socket, Port}),
+    SimId = State#interface_state.simid,
+    gen_server:call(es_connection_server, {relay_port, SimId, Reply_socket, Port}),
     {ok, _Sock} = gen_tcp:accept(LSock),
 %    io:format("accepted"),
     {noreply, State}.
