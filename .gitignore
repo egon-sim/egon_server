@@ -4,3 +4,4 @@ rebar*
 priv/curvebook
 .eunit
 logs/*
+compile.bat
