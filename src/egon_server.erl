@@ -26,4 +26,6 @@ general_test() ->
     "305.0" = egon_client:send("{get, es_w7300_server, tref}"),
     "ok" = egon_client:send("{action, es_rod_position_server, step_in}"),
     "304.9416710346633" = egon_client:send("{get, es_core_server, tavg}"),
+    egon_client:stop(),
+    egon_server:stop(),
     ok.

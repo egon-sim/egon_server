@@ -29,7 +29,7 @@ handle_call({switch_port, PortNo}, _From, State) ->
 handle_call(stop, _From, State) -> 
     Sock = State#client_state.sock,
     gen_tcp:close(Sock),
-    {stop, normal, State}.
+    {stop, normal, stopped, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Msg, State) -> {noreply, State}.
@@ -94,3 +94,14 @@ parse(Buffer) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
     Args.
+
+client_test() ->
+    ok = egon_server:start(),
+    {ok, _} = egon_client:start(),
+    ok = egon_client:new_sim(),
+    "305.0" = egon_client:call("{get, es_core_server, tavg}"),
+    "ok" = egon_client:call("{action, es_rod_position_server, step_in}"),
+    "304.9416710346633" = egon_client:call("{get, es_core_server, tavg}"),
+    egon_server:stop(),
+    egon_client:stop(),
+    ok.
