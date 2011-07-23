@@ -5,7 +5,7 @@
 -record(interface_state, {simid, port, lsock, buffer, rsock}).
 
 start_link(SimId) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+    gen_server:start_link(?MODULE, [SimId], []).
 
 init([SimId]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
