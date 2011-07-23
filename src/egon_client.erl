@@ -46,14 +46,17 @@ start() ->
 
 new_sim() ->
     case parse(send("{ask, start_new_simulator}")) of
-        {started, Port} ->
+        {connected, Port} ->
 	    gen_server:call(?MODULE, {switch_port, Port});
 	{error_starting_child} ->
 	    io:format("Starting new simulator failed.~n"),
 	    {error, shutdown};
 	{unknown_error, Error} ->
 	    io:format("Unknown error: ~p.~n", [Error]),
-	    {unknown_error, Error}
+	    {unknown_error, Error};
+	Other ->
+	    io:format("Unknown error: ~p.~n", [Other]),
+	    Other
     end.
 
 conn_to_sim(Id) ->
@@ -68,7 +71,10 @@ conn_to_sim(Id) ->
 	    {error, no_such_sim};
 	{unknown_error, Error} ->
 	    io:format("Unknown error: ~p.~n", [Error]),
-	    {unknown_error, Error}
+	    {unknown_error, Error};
+	Other ->
+	    io:format("Unknown error: ~p.~n", [Other]),
+	    Other
     end.
 
 call(Message) ->

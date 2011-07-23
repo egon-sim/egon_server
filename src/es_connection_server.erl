@@ -112,12 +112,19 @@ exec_call(State, Socket) ->
 
 start_new_simulator(Reply_socket) ->
 %    io:format("starting children... "),
-    gen_server:call(es_simulator_tracker_server, {start_simulator, {reply_sock, Reply_socket}}),
+    case gen_server:call(es_simulator_tracker_server, {start_simulator}) of
+        {ok, SimId} ->
+            connect_to_simulator(SimId, Reply_socket);
+	{error, shutdown} -> 
+	    gen_tcp:send(Reply_socket, io_lib:fwrite("~p~n", [{error_starting_child}]));
+	Other -> 
+	    gen_tcp:send(Reply_socket, io_lib:fwrite("{unknown_error, ~p}~n", [Other]))
+    end,
 %    io:format("done.~n"),
     ok.
 
-connect_to_simulator(Sim, Socket) ->
-    {ok, [{Sim, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Sim, {reply_sock, Socket}}),
+connect_to_simulator(SimId, Socket) ->
+    {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, SimId}),
     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{connected, Port}])),
     ok.
 

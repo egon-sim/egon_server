@@ -1,16 +1,17 @@
 -module(es_interface_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
 -record(interface_state, {simid, port, lsock, buffer, rsock}).
 
-start_link(SimId, Connection) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId, Connection], []).
+start_link(SimId) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
-init([SimId, {reply_sock, Reply_socket}]) -> 
+init([SimId]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
     {ok, Port} = inet:port(LSock),
     io:format("server listening on port ~p.~n", [Port]),
-    {ok, #interface_state{simid = SimId, port = Port, lsock = LSock, rsock = Reply_socket, buffer=[]}, 0}.
+    {ok, #interface_state{simid = SimId, port = Port, lsock = LSock, buffer=[]}}.
 
 handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("~w ~n", [RawData]),
@@ -49,21 +50,27 @@ handle_info({tcp_closed, _Socket}, State) ->
 %    io:format("socket listening.~n"),
     {ok, _Sock} = gen_tcp:accept(LSock),
 %    io:format("socket restarted.~n"),
-    {noreply, State#interface_state{lsock = LSock, buffer=[]}};
+    {noreply, State#interface_state{lsock = LSock, buffer=[]}}.
 %    {noreply, State};
     
-handle_info(timeout, #interface_state{lsock = LSock} = State) ->
-    Reply_socket = State#interface_state.rsock,
-    Port = State#interface_state.port,
-    SimId = State#interface_state.simid,
-    gen_server:call(es_connection_server, {relay_port, SimId, Reply_socket, Port}),
-    {ok, _Sock} = gen_tcp:accept(LSock),
+%handle_info(timeout, #interface_state{lsock = LSock} = State) ->
+%    {ok, Port} = inet:port(LSock),
+%    SimId = State#interface_state.simid,
+%    gen_server:call(es_simulator_tracker_server, {update_port, SimId, Port}),
+%    {ok, _Sock} = gen_tcp:accept(LSock),
 %    io:format("accepted"),
-    {noreply, State}.
+%    {noreply, State}.
+
+handle_call({get_port}, _From, #interface_state{lsock = LSock} = State) ->
+    {ok, Port} = inet:port(LSock),
+    {reply, Port, State}.
+
+handle_cast({listen}, #interface_state{lsock = LSock} = State) ->
+    {ok, _Sock} = gen_tcp:accept(LSock),
+    {noreply, State};
 
 handle_cast(stop, State) -> {stop, normal, State}.
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.

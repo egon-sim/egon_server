@@ -10,7 +10,7 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 init([]) -> 
     {ok, #tracker_state{simulators = []}}.
 
-handle_call({start_simulator, Connection}, _From, State) -> 
+handle_call({start_simulator}, _From, State) -> 
     Sims = State#tracker_state.simulators,
 
     if
@@ -19,28 +19,27 @@ handle_call({start_simulator, Connection}, _From, State) ->
 	true ->
 	    SimId = lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
     end,
-    case es_simulator_dispatcher:start_child(SimId, Connection) of
+    case es_simulator_dispatcher:start_child(SimId) of
         {ok, Child} ->
-	    {reply, ok, State#tracker_state{simulators = [{SimId, Child, unknown}|Sims]}};
+	    {reply, {ok, SimId}, State#tracker_state{simulators = [{SimId, Child, unknown}|Sims]}};
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
-	    {reply_sock, Socket} = Connection,
-	    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{error_starting_child}])),
 	    {reply, {error, shutdown}, State};
 	Other ->
 	    io:format("Other: ~p", [Other]),
-	    {reply_sock, Socket} = Connection,
-	    gen_tcp:send(Socket, io_lib:fwrite("{unknown_error, ~p}~n", [Other])),
 	    {reply, Other, State}
     end;
 
-handle_call({connect_to_simulator, Sim, Connection}, _From, State) -> 
+handle_call({connect_to_simulator, Sim}, _From, State) -> 
     Sims = State#tracker_state.simulators,
 
+    %io:format("Ping~n"),
     {FoundSim, _} = lists:partition(fun({S, _, _}) -> S == Sim end, Sims),
+    %io:format("FoundSim: ~p~n", [FoundSim]),
     if
         length(FoundSim) == 1 ->
-	    {reply, {ok, FoundSim}, State};
+	    {ok, Port} = es_interface_dispatcher:start_child(),
+	    {reply, {ok, [{Sim, none, Port}]}, State};
         length(FoundSim) == 0 ->
 	    {reply, {error, no_such_id}, State};
         length(FoundSim) > 1 ->

@@ -13,6 +13,7 @@
       es_core_server, 
       es_curvebook_server,
       es_flux_buffer_server, 
+      es_interface_dispatcher,
       es_interface_server,
       es_makeup_buffer_server, 
       es_ramper_server,
