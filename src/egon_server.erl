@@ -12,11 +12,11 @@ restart() ->
     stop(),
     start().
 
-run() ->
-    gen_server:call(es_config_server, {unfreaze_sim}).
+run(Sim) ->
+    gen_server:call({Sim, es_config_server}, {unfreaze_sim}).
 
-pause() ->
-    gen_server:call(es_config_server, {freaze_sim}).
+pause(Sim) ->
+    gen_server:call({Sim, es_config_server}, {freaze_sim}).
 
 general_test() ->
     ok = egon_server:start(),
