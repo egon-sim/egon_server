@@ -2,13 +2,13 @@
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(core_state, {simid, port, flux_buffer, boron, burnup, flux}).
+-record(core_state, {simid, flux_buffer, boron, burnup, flux}).
 
 start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
     Buffer = es_flux_buffer_server,
-    {ok, #core_state{simid = SimId, port=core_port, flux_buffer=Buffer}}.
+    {ok, #core_state{simid = SimId, flux_buffer=Buffer}}.
 
 handle_call({get, boron}, _From, State) ->
     {reply, State#core_state.boron, State};
@@ -50,7 +50,8 @@ handle_call({set, flux, Flux}, _From, State) ->
     {reply, gen_server:call(State#core_state.flux_buffer, {set, flux, Flux}), State};
 
 handle_call({get, tavg}, _From, State) ->
-    Tref = gen_server:call(es_w7300_server, {get, tref}),
+    SimId = State#core_state.simid,
+    Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
     Tavg = Tref + tref_mismatch(State),
     {reply, Tavg, State};
 
@@ -71,7 +72,6 @@ handle_call({get, state}, _From, State) ->
     {reply, State, State};
 
 handle_call(stop, _From, State) ->
-    es_comm:stop(core_port),
     gen_server:call(State#core_state.flux_buffer, stop),
     {stop, normal, stopped, State}.
 

@@ -20,8 +20,8 @@ step_out() -> es_rod_position:step_out().
 
 power() -> es_turbine:power().
 
-tref() ->
-    gen_server:call(es_w7300_server, {get, tref}).
+tref(SimId) ->
+    gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}).
 tavg() -> 
     gen_server:call(es_core_server, {get, tavg}).
 

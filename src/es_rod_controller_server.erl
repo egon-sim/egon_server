@@ -28,7 +28,7 @@ handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= manua
     {reply, tick, State};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto ->
-    Terr = calc_terr(),
+    Terr = calc_terr(State),
 
     Old_speed = State#rod_controller_state.speed,
     New_speed = rod_speed(Terr, Old_speed),
@@ -111,7 +111,7 @@ ticks_to_step(State) ->
     Ticks_per_second = State#rod_controller_state.ticks_per_second,
     Ticks_per_second * Seconds_to_step.
 
-calc_terr() ->
+calc_terr(#rod_controller_state{simid = SimId}) ->
     Tavg = gen_server:call(es_core_server, {get, tavg}),
-    Tref = gen_server:call(es_w7300_server, {get, tref}),
+    Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
     Tref - Tavg.
