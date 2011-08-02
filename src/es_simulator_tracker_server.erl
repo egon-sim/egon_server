@@ -30,22 +30,13 @@ handle_call({start_simulator}, _From, State) ->
 	    {reply, Other, State}
     end;
 
-handle_call({connect_to_simulator, Sim}, _From, State) -> 
-    Sims = State#tracker_state.simulators,
-
-    %io:format("Ping~n"),
-    {FoundSim, _} = lists:partition(fun({S, _, _}) -> S == Sim end, Sims),
-    %io:format("FoundSim: ~p~n", [FoundSim]),
-    if
-        length(FoundSim) == 1 ->
-	    {ok, Port} = es_interface_dispatcher:start_child(),
-	    {reply, {ok, [{Sim, none, Port}]}, State};
-        length(FoundSim) == 0 ->
-	    {reply, {error, no_such_id}, State};
-        length(FoundSim) > 1 ->
-	    {reply, {error, id_not_unique}, State};
-        true ->
-	    {reply, {error, other}, State}
+handle_call({connect_to_simulator, SimId}, _From, State) -> 
+    case get_sim(SimId, State) of
+        {ok, _} ->
+	    {ok, Port} = es_interface_dispatcher:start_child(SimId),
+	    {reply, {ok, [{SimId, none, Port}]}, State};
+	Other ->
+	    {reply, Other, State}
     end;
 
 handle_call({update_port, SimId, Port}, _From, State) -> 
@@ -54,7 +45,10 @@ handle_call({update_port, SimId, Port}, _From, State) ->
     {reply, ok, State#tracker_state{simulators = New_sims}};
 
 handle_call({get, simulators}, _From, State) -> 
-    {reply, State#tracker_state.simulators, State}.
+    {reply, {ok, State#tracker_state.simulators}, State};
+
+handle_call({get, sim_info, SimId}, _From, State) -> 
+    {reply, get_sim(SimId, State), State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Msg, State) -> {noreply, State}.
@@ -64,6 +58,22 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+get_sim(SimId, State) ->
+    Sims = State#tracker_state.simulators,
+
+    {FoundSim, _} = lists:partition(fun({S, _, _}) -> S == SimId end, Sims),
+    if
+        length(FoundSim) == 1 ->
+	    [SimInfo] = FoundSim,
+	    {ok, SimInfo};
+        length(FoundSim) == 0 ->
+	    {error, no_such_id};
+        length(FoundSim) > 1 ->
+	    {error, id_not_unique};
+        true ->
+	    {error, other}
+    end.
 
 update_sims([], _, _) ->
     [];
