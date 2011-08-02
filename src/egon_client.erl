@@ -2,15 +2,15 @@
 -include_lib("include/es_common.hrl").
 -import(re).
 -behaviour(gen_server).
--export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(client_state, {host, port, sock}).
+-export([start_link/3, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-record(client_state, {host, port, sock, username}).
 -compile(export_all).
 
-start_link(Host, Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Host, Port], []).
+start_link(Host, Port, Username) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Host, Port, Username], []).
 
-init([Host, PortNo]) -> 
+init([Host, PortNo, Username]) -> 
     {ok,Sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
-    {ok, #client_state{sock = Sock, host = Host, port = PortNo}}.
+    {ok, #client_state{sock = Sock, host = Host, port = PortNo, username = Username}}.
 
 handle_call({send, Message}, _From, State) -> 
     Sock = State#client_state.sock,
@@ -25,6 +25,9 @@ handle_call({switch_port, PortNo}, _From, State) ->
     Host = State#client_state.host,
     {ok, New_sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
     {reply, ok, State#client_state{sock = New_sock, port = PortNo}};
+
+handle_call({get, username}, _From, State) -> 
+    {reply, State#client_state.username, State};
 
 handle_call(stop, _From, State) -> 
     Sock = State#client_state.sock,
@@ -42,10 +45,15 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start() ->
-    start_link("localhost", 1055).
+    start("unknown").
 
-new_sim() ->
-    case parse(send("{ask, start_new_simulator}")) of
+start(Username) ->
+    start_link("localhost", 1055, Username).
+
+new_sim(Name, Desc) ->
+    Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
+    io:format(Params),
+    case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
         {connected, Port} ->
 	    gen_server:call(?MODULE, {switch_port, Port});
 	{error_starting_child} ->
@@ -60,7 +68,8 @@ new_sim() ->
     end.
 
 conn_to_sim(Id) ->
-    Retv = send("{ask, connect_to_simulator, " ++ integer_to_list(Id) ++ "}"),
+    Params = [integer_to_list(Id), gen_server:call(?MODULE, {get, username})],
+    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}"),
     io:format("Retv: ~p.~n", [Retv]),
     case parse(Retv) of
         {connected, Port} ->

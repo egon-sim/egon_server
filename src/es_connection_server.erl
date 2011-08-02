@@ -102,9 +102,9 @@ exec_call(State, Socket) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 
     Reply = case Args of
-        {ask, start_new_simulator} ->
+        {ask, start_new_simulator, _} ->
 	    start_new_simulator();
-        {ask, connect_to_simulator, SimId} ->
+        {ask, connect_to_simulator, [SimId, _]} ->
             connect_to_simulator(SimId);
 	{ask, sim_info} ->
 	    sim_info();
