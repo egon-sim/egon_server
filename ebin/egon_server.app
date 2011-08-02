@@ -32,6 +32,8 @@
       es_w7300_server
 ]},
    {registered, []},
-   {applications, [kernel, stdlib, sasl]},
+   {applications, [kernel, stdlib
+   , sasl
+   ]},
    {mod, {es_app, []}}
 ]}.

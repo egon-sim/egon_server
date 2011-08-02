@@ -119,4 +119,11 @@ call(SimId, {set, Server, Param, Args}) ->
 call(SimId, {action, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {action, Param});
 call(SimId, {action, Server, Param, Args}) ->
-    gen_server:call({global, {SimId, Server}}, {action, Param, Args}).
+    gen_server:call({global, {SimId, Server}}, {action, Param, Args});
+
+call(SimId, {ask, sim_info}) ->
+    es_connection_server:sim_info(SimId);
+call(SimId, {ask, sim_info, SimId}) ->
+    es_connection_server:sim_info(SimId);
+call(_SimId, {ask, list_sims}) ->
+    es_connection_server:list_sims().

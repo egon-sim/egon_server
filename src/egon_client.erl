@@ -83,6 +83,15 @@ call(Message) ->
 send(Message) ->
     gen_server:call(?MODULE, {send, Message}).
 
+sim_info() ->
+    send("{ask, sim_info}").
+
+sim_info(Id) ->
+    send("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
+
+list_sims() ->
+    send("{ask, list_sims}").
+
 stop() ->
     gen_server:call(?MODULE, stop).
 

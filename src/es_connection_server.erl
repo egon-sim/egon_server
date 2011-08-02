@@ -1,7 +1,7 @@
 -module(es_connection_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4, sim_info/1, list_sims/0]).
 -record(connection_state, {port, simulators, buffer, lsock}).
 
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
@@ -101,30 +101,46 @@ exec_call(State, Socket) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 
-    case Args of
+    Reply = case Args of
         {ask, start_new_simulator} ->
-	    start_new_simulator(Socket);
-        {ask, connect_to_simulator, Sim} ->
-	    connect_to_simulator(Sim, Socket)
+	    start_new_simulator();
+        {ask, connect_to_simulator, SimId} ->
+            connect_to_simulator(SimId);
+	{ask, sim_info} ->
+	    sim_info();
+	{ask, sim_info, SimId} ->
+	    sim_info(SimId);
+	{ask, list_sims} ->
+	    list_sims();
+	true ->
+	    unknown_request
     end,
+    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Reply])),
     ok.
 
 
-start_new_simulator(Reply_socket) ->
+start_new_simulator() ->
 %    io:format("starting children... "),
     case gen_server:call(es_simulator_tracker_server, {start_simulator}) of
         {ok, SimId} ->
-            connect_to_simulator(SimId, Reply_socket);
+            connect_to_simulator(SimId);
 	{error, shutdown} -> 
-	    gen_tcp:send(Reply_socket, io_lib:fwrite("~p~n", [{error_starting_child}]));
+	    {error_starting_child};
 	Other -> 
-	    gen_tcp:send(Reply_socket, io_lib:fwrite("{unknown_error, ~p}~n", [Other]))
-    end,
-%    io:format("done.~n"),
-    ok.
+	    {unknown_error, Other}
+    end.
 
-connect_to_simulator(SimId, Socket) ->
+connect_to_simulator(SimId) ->
     {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, SimId}),
-    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{connected, Port}])),
-    ok.
+    {connected, Port}.
 
+sim_info() ->
+    not_connected_to_a_simulator.
+
+sim_info(SimId) ->
+    {ok, Reply} = gen_server:call(es_simulator_tracker_server, {get, sim_info, SimId}),
+    Reply.
+
+list_sims() ->
+    {ok, List} = gen_server:call(es_simulator_tracker_server, {get, simulators}),
+    List.
