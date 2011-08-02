@@ -4,27 +4,28 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(makeup_buffer_state, {simid, buffers, cycle_len, boron_diff_per_cycle}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 boron_diff(RCS, TNK, VADD, WADD, W) ->
     (TNK - RCS) * (1 - math:exp(-VADD*WADD/W)).
 
-bor_dil([]) ->
+bor_dil(_SimId, []) ->
     [];
-bor_dil([{Action, Diff} | Rest]) ->
+bor_dil(SimId, [{Action, Diff} | Rest]) ->
     io:format("~w ~n", [Diff]),    
-    gen_server:call(es_core_server, {action, Action, 1}),
+    gen_server:call({global, {SimId, es_core_server}}, {action, Action, 1}),
     New_diff = Diff - 1,
     if
         New_diff > 0 ->
-	    New_buffers = lists:append([{Action, New_diff}], bor_dil(Rest));
+	    New_buffers = lists:append([{Action, New_diff}], bor_dil(SimId, Rest));
 	true ->
-	    New_buffers = bor_dil(Rest)
+	    New_buffers = bor_dil(SimId, Rest)
     end,
     New_buffers.
    
 init([SimId]) -> 
-    gen_server:call(es_clock_server, {add_listener, ?MODULE}),
+    io:format("ProcName: ~p~n", [process_info(self(), registered_name)]),
+    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
     {ok, #makeup_buffer_state{simid = SimId, buffers=[]}}.
 
 handle_call({get, buffers}, _From, State) ->
@@ -58,8 +59,9 @@ handle_call({action, dilute, [RCS, VADD]}, _From, State) ->
 
 handle_call({tick}, _From, State) ->
     Buffers = State#makeup_buffer_state.buffers,
+    SimId = State#makeup_buffer_state.simid,
 %    io:format("~w~n", [Buffers]),
-    New_buffers = bor_dil(Buffers),
+    New_buffers = bor_dil(SimId, Buffers),
 
     if
 %        New_buffers =:= [] ->

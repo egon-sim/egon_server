@@ -2,13 +2,12 @@
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(core_state, {simid, flux_buffer, boron, burnup, flux}).
+-record(core_state, {simid, boron, burnup, flux}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    Buffer = es_flux_buffer_server,
-    {ok, #core_state{simid = SimId, flux_buffer=Buffer}}.
+    {ok, #core_state{simid = SimId}}.
 
 handle_call({get, boron}, _From, State) ->
     {reply, State#core_state.boron, State};
@@ -41,13 +40,14 @@ handle_call({set_now, flux, Flux}, {_From, _}, State) ->
 %    error_logger:info_report(["Core: Set_now", {flux, Flux}]),
     {reply, ok, State#core_state{flux=Flux}};
 
-handle_call({set, flux, Flux}, {From, _}, State) when From =:= State#core_state.flux_buffer ->
+handle_call({set, flux, Flux}, {From, _}, #core_state{simid=SimId} = State) when From =:= {SimId, flux_buffer_server} ->
 %    error_logger:info_report(["Core: Set from flux_buffer", {flux, Flux}]),
     {reply, ok, State#core_state{flux=Flux}};
 
 handle_call({set, flux, Flux}, _From, State) ->
 %    error_logger:info_report(["Core: Set", {flux, Flux}]),
-    {reply, gen_server:call(State#core_state.flux_buffer, {set, flux, Flux}), State};
+    SimId = State#core_state.simid,
+    {reply, gen_server:call({global, {SimId, es_flux_buffer_server}}, {set, flux, Flux}), State};
 
 handle_call({get, tavg}, _From, State) ->
     SimId = State#core_state.simid,
@@ -72,7 +72,6 @@ handle_call({get, state}, _From, State) ->
     {reply, State, State};
 
 handle_call(stop, _From, State) ->
-    gen_server:call(State#core_state.flux_buffer, stop),
     {stop, normal, stopped, State}.
 
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
@@ -85,12 +84,13 @@ pcms_from_full_power(State) ->
     Boron = State#core_state.boron,
     Burnup = State#core_state.burnup,
     Flux = State#core_state.flux,
-    Rod_worth = gen_server:call(es_rod_position_server, {get, integral_worth, [Burnup, Flux]}),
-    Power_defect_100 = gen_server:call(es_curvebook_server, {get, power_defect, [Burnup, Boron, 100]}),
-    Power_defect = gen_server:call(es_curvebook_server, {get, power_defect, [Burnup, Boron, Flux]}),
+    SimId = State#core_state.simid,
+    Rod_worth = gen_server:call({global, {SimId, es_rod_position_server}}, {get, integral_worth, [Burnup, Flux]}),
+    Power_defect_100 = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, 100]}),
+    Power_defect = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, Flux]}),
 
-    Boron_worth = gen_server:call(es_curvebook_server, {get, boron_worth, [Burnup, Boron]}),
-    Critical_boron = gen_server:call(es_curvebook_server, {get, critical_boron, [Burnup]}),
+    Boron_worth = gen_server:call({global, {SimId, es_curvebook_server}}, {get, boron_worth, [Burnup, Boron]}),
+    Critical_boron = gen_server:call({global, {SimId, es_curvebook_server}}, {get, critical_boron, [Burnup]}),
     Boron_defect = (Boron - Critical_boron) * Boron_worth,
 
 %    io:format("~w ~w ~w ~w ~w ~w~n", [Burnup, Flux, Rod_worth, Power_defect_100, Power_defect, Boron_defect]),
@@ -102,7 +102,8 @@ mtc(State) ->
     Boron = State#core_state.boron,
     Burnup = State#core_state.burnup,
     Flux = State#core_state.flux,
-    gen_server:call(es_curvebook_server, {get, mtc, [Burnup, Boron, Flux]}).
+    SimId = State#core_state.simid,
+    gen_server:call({global, {SimId, es_curvebook_server}}, {get, mtc, [Burnup, Boron, Flux]}).
 
 tref_mismatch(State) ->
     Pcms = pcms_from_full_power(State),

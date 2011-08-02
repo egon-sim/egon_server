@@ -5,7 +5,7 @@
 -record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, pls}).
 -compile(export_all).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
     case fill_curvebook() of

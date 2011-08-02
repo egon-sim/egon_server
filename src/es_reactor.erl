@@ -22,11 +22,5 @@ power() -> es_turbine:power().
 
 tref(SimId) ->
     gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}).
-tavg() -> 
-    gen_server:call(es_core_server, {get, tavg}).
-
-status() ->
-    es_comm:call(rx_port, "status", []).
-
-status(1) ->
-    es_comm:call(rx_port, "status", [1]).
+tavg(SimId) -> 
+    gen_server:call({global, {SimId, es_core_server}}, {get, tavg}).

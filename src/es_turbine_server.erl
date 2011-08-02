@@ -4,7 +4,7 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(turbine_state, {simid, power, target, rate, go}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> {ok, #turbine_state{simid = SimId, power=100, target=100, rate=0, go=false}}.
 
@@ -21,7 +21,8 @@ handle_call({get, tref}, _From, State) -> %TODO: move constants to config file/E
 
 handle_call({set, power, Power}, _From, State) ->
     New_state = State#turbine_state{power=Power},
-    gen_server:call(es_core_server, {set, flux, Power}),
+    SimId = State#turbine_state.simid,
+    gen_server:call({global, {SimId, es_core_server}}, {set, flux, Power}),
     {reply, New_state#turbine_state.power, New_state};
 handle_call({set, target, Target}, _From, State) ->
     New_state = State#turbine_state{target=Target},
@@ -34,7 +35,8 @@ handle_call({set, go, Go}, _From, State) ->
     {reply, New_state#turbine_state.go, New_state};
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= false ->
-    gen_server:call(es_ramper_server, {start_ramp, State#turbine_state.power, State#turbine_state.target, State#turbine_state.rate}),
+    SimId = State#turbine_state.simid,
+    gen_server:call({global, {SimId, es_ramper_server}}, {start_ramp, State#turbine_state.power, State#turbine_state.target, State#turbine_state.rate}),
     {reply, ok, State#turbine_state{go=true}};
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= true ->
@@ -45,7 +47,8 @@ handle_call({action, ramp, stop}, _Caller, State) ->
     {reply, ok, New_state};
 
 %handle_call({ramp_start}, _From, State) when State#turbine_state.go =:= false ->
-%    gen_server:call(es_ramper_server, {start_ramp, State#turbine_state.power, State#turbine_state.target, State#turbine_state.rate}),
+%    SimId = State#turbine_state.simid,
+%    gen_server:call({global, {SimId, es_ramper_server}}, {start_ramp, State#turbine_state.power, State#turbine_state.target, State#turbine_state.rate}),
 %    {reply, ok, State#turbine_state{go=true}};
 
 %handle_call({ramp_start}, _From, State) when State#turbine_state.go =:= true ->

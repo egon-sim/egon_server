@@ -4,14 +4,14 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(ramper_state, {simid, turbine, target, rate, direction}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) ->
     {ok, #ramper_state{simid = SimId, turbine=es_turbine_server, target=none, rate=none, direction=none}}.
 
-stop(Target, Rate) ->
-    ok = gen_server:call(es_turbine_server, {action, ramp, stop}),
-    Power = gen_server:call(es_turbine_server, {get, power}),
+stop(SimId, Target, Rate) ->
+    ok = gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, stop}),
+    Power = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
     error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
 
 handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
@@ -20,11 +20,13 @@ handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
          false -> Direction = 1
     end,
     New_state = State#ramper_state{target=Target, rate=Rate, direction=Direction},
-    gen_server:call(es_clock_server, {add_listener, ?MODULE}),
+    SimId = State#ramper_state.simid,
+    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
     {reply, ok, New_state};
 
 handle_call({tick}, _From, State) ->
-    Current = gen_server:call(es_turbine_server, {get, power}),
+    SimId = State#ramper_state.simid,
+    Current = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
     Target = State#ramper_state.target,
     Rate = State#ramper_state.rate,
     Direction = State#ramper_state.direction,
@@ -34,11 +36,11 @@ handle_call({tick}, _From, State) ->
     New = Current + (Direction * Rate),
     case Direction * (New - Target) =< 0 of
         true -> 
-		gen_server:call(es_turbine_server, {set, power, New}),
+		gen_server:call({global, {SimId, es_turbine_server}}, {set, power, New}),
 		Retval = ok;
         _ -> 
-		gen_server:call(es_turbine_server, {set, power, Target}),
-		stop(Target, Rate),
+		gen_server:call({global, {SimId, es_turbine_server}}, {set, power, Target}),
+		stop(SimId, Target, Rate),
 		Retval = rem_listener
     end,
     {reply, Retval, State};

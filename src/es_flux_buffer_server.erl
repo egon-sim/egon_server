@@ -19,10 +19,10 @@ status([Head | Tail], State) ->
 status([], _State) ->
     ok.    
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    gen_server:call(es_clock_server, {add_listener, ?MODULE}),
+    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
     {ok, #flux_buffer_state{simid = SimId, target=undef}}.
 
 handle_call({get, cycle_len}, _From, State) ->
@@ -47,7 +47,8 @@ handle_call({set, flux, Target}, _From, State) ->
 
 handle_call({tick}, _From, State) ->% when From =:= State#flux_buffer_state.timer ->
 %    io:format("From: ~w, Timer: ~w~n", [From, State#flux_buffer_state.timer]),
-    Flux = gen_server:call(es_core_server, {get, flux}),
+    SimId = State#flux_buffer_state.simid,
+    Flux = gen_server:call({global, {SimId, es_core_server}}, {get, flux}),
     if
         State#flux_buffer_state.target =:= undef ->
 	    Target = Flux;
@@ -70,7 +71,7 @@ handle_call({tick}, _From, State) ->% when From =:= State#flux_buffer_state.time
 	true ->
 	    New = Flux + Direction * State#flux_buffer_state.flux_diff_per_cycle,
 %	    error_logger:info_report(["FBS: Enter", {flux, Flux}, {target, Target}]),
-    	    gen_server:call(es_core_server, {set_now, flux, New}),
+    	    gen_server:call({global, {SimId, es_core_server}}, {set_now, flux, New}),
 	    {reply, tick, State}
     end;
 

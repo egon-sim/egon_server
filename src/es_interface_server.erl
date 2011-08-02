@@ -4,8 +4,7 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
 -record(interface_state, {simid, port, lsock, buffer, rsock}).
 
-start_link(SimId) ->
-    gen_server:start_link(?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
@@ -98,6 +97,7 @@ process_data(RawData, State, _Socket) ->
 
 exec_call(State, Socket) ->
     Buffer = State#interface_state.buffer,
+    SimId = State#interface_state.simid,
 %    io:format("~p~n", [Buffer]),
     {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
 %    io:format("~p~n", [Tuple]),
@@ -105,18 +105,18 @@ exec_call(State, Socket) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
-    Result = call(Args),
+    Result = call(SimId, Args),
     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
 %    io:format("Server sent: ~w~n", [Result]),
     ok.
 
-call({get, Server, Param}) ->
-    gen_server:call(Server, {get, Param});
-call({get, Server, Param, Args}) ->
-    gen_server:call(Server, {get, Param, Args});
-call({set, Server, Param, Args}) ->
-    gen_server:call(Server, {set, Param, Args});
-call({action, Server, Param}) ->
-    gen_server:call(Server, {action, Param});
-call({action, Server, Param, Args}) ->
-    gen_server:call(Server, {action, Param, Args}).
+call(SimId, {get, Server, Param}) ->
+    gen_server:call({global, {SimId, Server}}, {get, Param});
+call(SimId, {get, Server, Param, Args}) ->
+    gen_server:call({global, {SimId, Server}}, {get, Param, Args});
+call(SimId, {set, Server, Param, Args}) ->
+    gen_server:call({global, {SimId, Server}}, {set, Param, Args});
+call(SimId, {action, Server, Param}) ->
+    gen_server:call({global, {SimId, Server}}, {action, Param});
+call(SimId, {action, Server, Param, Args}) ->
+    gen_server:call({global, {SimId, Server}}, {action, Param, Args}).

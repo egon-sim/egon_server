@@ -5,11 +5,11 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(rod_controller_state, {simid, mode, speed, manual_speed, ticks_per_second, ticks_left}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    gen_server:call(es_clock_server, {add_listener, ?MODULE}),
-    Manual_speed = gen_server:call(es_curvebook_server, {get, pls, [speed_of_rods_in_manual]}),
+    gen_server:call(es_clock_server, {add_listener, {global, {SimId, ?MODULE}}}),
+    Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
     {ok, #rod_controller_state{simid = SimId, speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
 
 handle_call({get, speed}, _From, State) ->
@@ -21,7 +21,8 @@ handle_call({set, mode, manual}, _From, State) ->
     Speed = State#rod_controller_state.manual_speed,
     {reply, ok, State#rod_controller_state{mode=manual, speed = Speed}};
 handle_call({set, mode, auto}, _From, State) ->
-    Second_to_ticks = gen_server:call(es_clock_server, {get, seconds_to_ticks, 1}),
+    SimId = State#rod_controller_state.simid,
+    Second_to_ticks = gen_server:call({global, {SimId, es_clock_server}}, {get, seconds_to_ticks, 1}),
     {reply, ok, State#rod_controller_state{mode=auto, ticks_per_second = Second_to_ticks}};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= manual ->
@@ -40,7 +41,7 @@ handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto 
 
     if
         Ticks_left =< 1 ->
-	    step(New_speed),
+	    step(State, New_speed),
 	    New_ticks_left = New_ticks;
         Ticks_left >= New_ticks ->
 	    New_ticks_left = New_ticks - 1;
@@ -93,12 +94,13 @@ rod_speed(Terr, Old_speed) ->
    end,
    Speed.
 
-step(Speed) ->
+step(State, Speed) ->
+    SimId = State#rod_controller_state.simid,
     if
         Speed < 0 ->
-    	    gen_server:call(es_rod_position_server, {action, step_in});
+    	    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in});
         Speed > 0 ->
-    	    gen_server:call(es_rod_position_server, {action, step_out});
+    	    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_out});
 	true ->
 	    speed_is_zero
     end.
@@ -112,6 +114,6 @@ ticks_to_step(State) ->
     Ticks_per_second * Seconds_to_step.
 
 calc_terr(#rod_controller_state{simid = SimId}) ->
-    Tavg = gen_server:call(es_core_server, {get, tavg}),
+    Tavg = gen_server:call({global, {SimId, es_core_server}}, {get, tavg}),
     Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
     Tref - Tavg.

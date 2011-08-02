@@ -5,7 +5,7 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(clock_state, {simid, listeners, timer, cycle_len, cycle_no, status, log_ticks}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
     {ok, #clock_state{simid = SimId, listeners=[], timer=none, cycle_len=none, cycle_no=0, status=stopped, log_ticks=false}}.

@@ -4,11 +4,11 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(rod_position_state, {simid, control_position_counter, control_group_position, control_rod_stops, overlap, shutdown_group_position, shutdown_position_counter}).
 
-start_link(SimId) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    Control_rod_stops = gen_server:call(es_curvebook_server, {get, pls, [control_rod_stops]}),
-    Overlap = gen_server:call(es_curvebook_server, {get, pls, [overlap]}),
+    Control_rod_stops = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [control_rod_stops]}),
+    Overlap = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [overlap]}),
     {ok, #rod_position_state{simid = SimId, control_rod_stops = Control_rod_stops, overlap = Overlap}}.
 
 handle_call({get, control_position_counter}, _From, State) ->
@@ -25,8 +25,9 @@ handle_call({get, control_position, Group}, _From, State) ->
 handle_call({get, shutdown_position_counter}, _From, State) ->
     {reply, State#rod_position_state.shutdown_position_counter, State};
 handle_call({set, shutdown_position_counter, Counter}, _From, State) ->
-    No_of_groups = gen_server:call(es_curvebook_server, {get, pls, [shutdown_rod_number]}),
-    Rod_length = gen_server:call(es_curvebook_server, {get, pls, [shutdown_rod_length]}),
+    SimId = State#rod_position_state.simid,
+    No_of_groups = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_number]}),
+    Rod_length = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_length]}),
     if
         Counter > Rod_length ->
 	    Counter_1 = Rod_length;
@@ -67,7 +68,8 @@ handle_call({action, step_out}, _From, State) ->
 
 handle_call({get, integral_worth, [Burnup, _Flux]}, _From, State) ->
     Counter = State#rod_position_state.control_position_counter,
-    Worth = gen_server:call(es_curvebook_server, {get, rod_worth, [Burnup, Counter]}),
+    SimId = State#rod_position_state.simid,
+    Worth = gen_server:call({global, {SimId, es_curvebook_server}}, {get, rod_worth, [Burnup, Counter]}),
     {reply, Worth, State};
 
 handle_call(stop, _From, Tab) ->
