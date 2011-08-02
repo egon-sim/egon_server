@@ -4,7 +4,7 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
 -record(interface_state, {simid, port, lsock, buffer, rsock}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+start_link(SimId) -> gen_server:start_link(?MODULE, [SimId], []).
 
 init([SimId]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),

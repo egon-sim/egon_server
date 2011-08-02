@@ -8,7 +8,7 @@
 start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    gen_server:call(es_clock_server, {add_listener, {global, {SimId, ?MODULE}}}),
+    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
     Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
     {ok, #rod_controller_state{simid = SimId, speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
 
