@@ -66,7 +66,7 @@ handle_call({relay_port, SimId, Socket, Port}, _From, State) ->
 %    io:format("Server sent: ~w~n", [Result]),
     {reply, ok, State}.
 
-%handle_call(_Request, _From, State) -> {reply, ok, State}.
+handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
@@ -102,10 +102,10 @@ exec_call(State, Socket) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 
     Reply = case Args of
-        {ask, start_new_simulator, _} ->
-	    start_new_simulator();
-        {ask, connect_to_simulator, [SimId, _]} ->
-            connect_to_simulator(SimId);
+        {ask, start_new_simulator, Params} ->
+	    start_new_simulator(Params);
+        {ask, connect_to_simulator, Params} ->
+            connect_to_simulator(Params);
 	{ask, sim_info} ->
 	    sim_info();
 	{ask, sim_info, SimId} ->
@@ -119,19 +119,21 @@ exec_call(State, Socket) ->
     ok.
 
 
-start_new_simulator() ->
+start_new_simulator(Params) ->
 %    io:format("starting children... "),
-    case gen_server:call(es_simulator_tracker_server, {start_simulator}) of
+    case gen_server:call(es_simulator_tracker_server, {start_simulator, Params}) of
         {ok, SimId} ->
-            connect_to_simulator(SimId);
+	    [_, _, User] = Params,
+            connect_to_simulator([SimId, User]);
 	{error, shutdown} -> 
 	    {error_starting_child};
 	Other -> 
 	    {unknown_error, Other}
     end.
 
-connect_to_simulator(SimId) ->
-    {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, SimId}),
+connect_to_simulator(Params) ->
+    [SimId|_] = Params,
+    {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Params}),
     {connected, Port}.
 
 sim_info() ->

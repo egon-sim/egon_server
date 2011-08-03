@@ -4,24 +4,20 @@
 -behaviour(gen_server).
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(tracker_state, {simulators}).
+-record(simulator_manifest, {id, name, desc, owner}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) -> 
     {ok, #tracker_state{simulators = []}}.
 
-handle_call({start_simulator}, _From, State) -> 
+handle_call({start_simulator, [Name, Desc, User]}, _From, State) -> 
     Sims = State#tracker_state.simulators,
-
-    if
-        Sims == [] ->
-	    SimId = 1;
-	true ->
-	    SimId = lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
-    end,
+    SimId = next_id(Sims),
     case es_simulator_dispatcher:start_child(SimId) of
         {ok, Child} ->
-	    {reply, {ok, SimId}, State#tracker_state{simulators = [{SimId, Child, unknown}|Sims]}};
+	    NewSim = #simulator_manifest{id = SimId, name = Name, desc = Desc, owner = User},
+	    {reply, {ok, SimId}, State#tracker_state{simulators = [NewSim|Sims]}};
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
 	    {reply, {error, shutdown}, State};
@@ -30,7 +26,7 @@ handle_call({start_simulator}, _From, State) ->
 	    {reply, Other, State}
     end;
 
-handle_call({connect_to_simulator, SimId}, _From, State) -> 
+handle_call({connect_to_simulator, [SimId, User]}, _From, State) -> 
     case get_sim(SimId, State) of
         {ok, _} ->
 	    {ok, Port} = es_interface_dispatcher:start_child(SimId),
@@ -59,10 +55,18 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+next_id(Sims) ->
+    if
+        Sims == [] ->
+	    1;
+	true ->
+	    lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
+    end.
+
 get_sim(SimId, State) ->
     Sims = State#tracker_state.simulators,
 
-    {FoundSim, _} = lists:partition(fun({S, _, _}) -> S == SimId end, Sims),
+    {FoundSim, _} = lists:partition(fun(S) -> S#simulator_manifest.id == SimId end, Sims),
     if
         length(FoundSim) == 1 ->
 	    [SimInfo] = FoundSim,
