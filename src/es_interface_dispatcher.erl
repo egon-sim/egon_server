@@ -10,7 +10,7 @@ start_child(SimId) ->
     io:format("Starting interface server.~n"),
     {ok, Child} = supervisor:start_child({global, {SimId, ?MODULE}}, []),
     io:format("New interface server: ~p~n", [Child]),
-    Port = gen_server:call(Child, {get_port}),
+    Port = gen_server:call(Child, {get, port}),
     io:format("Got port ~p.~n", [Port]),
     gen_server:cast(Child, {listen}),
     {ok, Port}.

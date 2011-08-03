@@ -95,6 +95,12 @@ sim_info() ->
 sim_info(Id) ->
     send("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
 
+sim_clients() ->
+    send("{ask, sim_clients}").
+
+sim_clients(Id) ->
+    send("{ask, sim_clients, " ++ integer_to_list(Id) ++ "}").
+
 list_sims() ->
     send("{ask, list_sims}").
 

@@ -1,7 +1,7 @@
 -module(es_connection_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4, sim_info/1, list_sims/0]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4, sim_info/1, sim_clients/1, list_sims/0]).
 -record(connection_state, {port, simulators, buffer, lsock}).
 
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
@@ -103,6 +103,10 @@ exec_call(State, Socket) ->
 	    sim_info();
 	{ask, sim_info, SimId} ->
 	    sim_info(SimId);
+	{ask, sim_clients} ->
+	    sim_clients();
+	{ask, sim_clients, SimId} ->
+	    sim_clients(SimId);
 	{ask, list_sims} ->
 	    list_sims();
 	true ->
@@ -134,6 +138,13 @@ sim_info() ->
 
 sim_info(SimId) ->
     {ok, Reply} = gen_server:call(es_simulator_tracker_server, {get, sim_info, SimId}),
+    Reply.
+
+sim_clients() ->
+    not_connected_to_a_simulator.
+
+sim_clients(SimId) ->
+    {ok, Reply} = gen_server:call(es_simulator_tracker_server, {get, sim_clients, SimId}),
     Reply.
 
 list_sims() ->

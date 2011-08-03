@@ -60,9 +60,13 @@ handle_info({tcp_closed, _Socket}, State) ->
 %    io:format("accepted"),
 %    {noreply, State}.
 
-handle_call({get_port}, _From, #interface_state{lsock = LSock} = State) ->
+handle_call({get, port}, _From, #interface_state{lsock = LSock} = State) ->
     {ok, Port} = inet:port(LSock),
-    {reply, Port, State}.
+    {reply, Port, State};
+
+handle_call({get, client_info}, _From, #interface_state{lsock = LSock} = State) ->
+    
+    {reply, client_info(LSock), State}.
 
 handle_cast({listen}, #interface_state{lsock = LSock} = State) ->
     {ok, _Sock} = gen_tcp:accept(LSock),
@@ -97,7 +101,6 @@ process_data(RawData, State, _Socket) ->
 
 exec_call(State, Socket) ->
     Buffer = State#interface_state.buffer,
-    SimId = State#interface_state.simid,
 %    io:format("~p~n", [Buffer]),
     {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
 %    io:format("~p~n", [Tuple]),
@@ -105,25 +108,38 @@ exec_call(State, Socket) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
-    Result = call(SimId, Args),
+    Result = call(State, Args),
     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
 %    io:format("Server sent: ~w~n", [Result]),
     ok.
 
-call(SimId, {get, Server, Param}) ->
+call(#interface_state{simid = SimId}, {get, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {get, Param});
-call(SimId, {get, Server, Param, Args}) ->
+call(#interface_state{simid = SimId}, {get, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {get, Param, Args});
-call(SimId, {set, Server, Param, Args}) ->
+call(#interface_state{simid = SimId}, {set, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {set, Param, Args});
-call(SimId, {action, Server, Param}) ->
+call(#interface_state{simid = SimId}, {action, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {action, Param});
-call(SimId, {action, Server, Param, Args}) ->
+call(#interface_state{simid = SimId}, {action, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {action, Param, Args});
 
-call(SimId, {ask, sim_info}) ->
+call(#interface_state{simid = SimId}, {ask, sim_info}) ->
     es_connection_server:sim_info(SimId);
-call(SimId, {ask, sim_info, SimId}) ->
+call(_, {ask, sim_info, SimId}) ->
     es_connection_server:sim_info(SimId);
-call(_SimId, {ask, list_sims}) ->
+
+call(#interface_state{simid = SimId}, {ask, sim_clients}) ->
+    call(SimId, {ask, sim_clients, SimId});
+call(#interface_state{simid = SimId, lsock = LSock}, {ask, sim_clients, SimId}) ->
+    client_info(LSock);
+call(_, {ask, sim_clients, SimId}) ->
+    es_connection_server:sim_clients(SimId);
+
+call(_, {ask, list_sims}) ->
     es_connection_server:list_sims().
+
+client_info(LSock) ->
+    {ok, Remote} = inet:peername(LSock),
+    {ok, Local} = inet:sockname(LSock),
+    {Remote, Local}.

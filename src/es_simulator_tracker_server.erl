@@ -42,7 +42,11 @@ handle_call({get, simulators}, _From, State) ->
     {reply, {ok, State#tracker_state.simulators}, State};
 
 handle_call({get, sim_info, SimId}, _From, State) -> 
-    {reply, get_sim(SimId, State), State}.
+    {reply, get_sim(SimId, State), State};
+
+handle_call({get, sim_clients, SimId}, _From, State) -> 
+    Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
+    {reply, {ok, Reply}, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Msg, State) -> {noreply, State}.
@@ -76,3 +80,6 @@ get_sim(SimId, State) ->
         true ->
 	    {error, other}
     end.
+
+client_info(Pid) ->
+    gen_server:call(Pid, {get, client_info}).
