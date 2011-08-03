@@ -52,7 +52,6 @@ start(Username) ->
 
 new_sim(Name, Desc) ->
     Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
-    io:format(Params),
     case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
         {connected, Port} ->
 	    gen_server:call(?MODULE, {switch_port, Port});
@@ -68,7 +67,7 @@ new_sim(Name, Desc) ->
     end.
 
 conn_to_sim(Id) ->
-    Params = [integer_to_list(Id), gen_server:call(?MODULE, {get, username})],
+    Params = "[" ++ integer_to_list(Id) ++ ", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
     Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}"),
     io:format("Retv: ~p.~n", [Retv]),
     case parse(Retv) of
