@@ -21,8 +21,11 @@ handle_call({start_simulator, [Name, Desc, User]}, _From, State) ->
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
 	    {reply, {error, shutdown}, State};
+	{error, {already_started, _}} ->
+	    io:format("That child is already started.~n"),
+	    {reply, {error, already_started}, State};
 	Other ->
-	    io:format("Other: ~p", [Other]),
+	    io:format("Other: ~p~n", [Other]),
 	    {reply, Other, State}
     end;
 
@@ -55,7 +58,7 @@ next_id(Sims) ->
         Sims == [] ->
 	    1;
 	true ->
-	    lists:max(lists:map(fun(Tuple) -> element(1, Tuple) end, Sims)) + 1
+	    lists:max(lists:map(fun(S) -> S#simulator_manifest.id end, Sims)) + 1
     end.
 
 get_sim(SimId, State) ->

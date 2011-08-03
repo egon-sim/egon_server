@@ -59,10 +59,8 @@ new_sim(Name, Desc) ->
 	    io:format("Starting new simulator failed.~n"),
 	    {error, shutdown};
 	{unknown_error, Error} ->
-	    io:format("Unknown error: ~p.~n", [Error]),
 	    {unknown_error, Error};
 	Other ->
-	    io:format("Unknown error: ~p.~n", [Other]),
 	    Other
     end.
 
