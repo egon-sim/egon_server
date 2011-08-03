@@ -59,13 +59,6 @@ handle_info(timeout, #connection_state{lsock = LSock} = State) ->
 
 handle_cast(stop, State) -> {stop, normal, State}.
 
-handle_call({relay_port, SimId, Socket, Port}, _From, State) -> 
-    Result = {started, Port},
-    gen_server:call(es_simulator_tracker_server, {update_port, SimId, Port}),
-    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
-%    io:format("Server sent: ~w~n", [Result]),
-    {reply, ok, State}.
-
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.

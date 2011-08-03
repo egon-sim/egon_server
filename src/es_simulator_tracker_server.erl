@@ -35,11 +35,6 @@ handle_call({connect_to_simulator, [SimId, User]}, _From, State) ->
 	    {reply, Other, State}
     end;
 
-handle_call({update_port, SimId, Port}, _From, State) -> 
-    Sims = State#tracker_state.simulators,
-    New_sims = update_sims(Sims, SimId, Port),
-    {reply, ok, State#tracker_state{simulators = New_sims}};
-
 handle_call({get, simulators}, _From, State) -> 
     {reply, {ok, State#tracker_state.simulators}, State};
 
@@ -78,12 +73,3 @@ get_sim(SimId, State) ->
         true ->
 	    {error, other}
     end.
-
-update_sims([], _, _) ->
-    [];
-
-update_sims([{SimId, Child, _}|Rest], SimId, Port) ->
-    [{SimId, Child, Port}|Rest];
-
-update_sims([Sim|Rest], SimId, Port) ->
-    [Sim|update_sims(Rest, SimId, Port)].
