@@ -16,8 +16,9 @@ handle_call({send, Message}, _From, State) ->
     Sock = State#client_state.sock,
     gen_tcp:send(Sock,Message),
     {ok, A} = gen_tcp:recv(Sock, 0, 2000),
-    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
-    {reply, B, State};
+%    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
+%    {match, [B]} = re:run(A, "^( .+)$", [{capture, [1], list}]),
+    {reply, A, State};
 
 handle_call({switch_port, PortNo}, _From, State) -> 
     Sock = State#client_state.sock,

@@ -32,7 +32,7 @@ handle_info({tcp, Socket, RawData}, State) ->
 	     end;
         {'EXIT', From, Reason} ->
 %	     io:format("received EXIT~n"),
-	     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{error, Reason}])),
+	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
 	     New_state = State#interface_state{buffer = []}
     end,
     process_flag(trap_exit, false),
@@ -109,7 +109,7 @@ exec_call(State, Socket) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
     Result = call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result])),
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
 %    io:format("Server sent: ~w~n", [Result]),
     ok.
 

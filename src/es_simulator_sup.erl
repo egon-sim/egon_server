@@ -8,11 +8,9 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--define(SERVER, ?MODULE).
-
 start_link(SimId) ->
    io:format("Starting new simulator (Id: ~p).~n", [SimId]),
-   supervisor:start_link({local, ?SERVER}, ?MODULE, [SimId]).
+   supervisor:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId]).
 
 init([SimId]) ->
    Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, [SimId]},

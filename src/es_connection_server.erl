@@ -31,7 +31,7 @@ handle_info({tcp, Socket, RawData}, State) ->
 	     end;
         {'EXIT', From, Reason} ->
 %	     io:format("received EXIT~n"),
-	     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [{error, Reason}])),
+	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
 	     New_state = State#connection_state{buffer = []}
     end,
     process_flag(trap_exit, false),
@@ -112,7 +112,7 @@ exec_call(State, Socket) ->
 	true ->
 	    unknown_request
     end,
-    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Reply])),
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Reply])),
     ok.
 
 
