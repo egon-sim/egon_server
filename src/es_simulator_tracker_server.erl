@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(tracker_state, {simulators}).
--record(simulator_manifest, {id, name, desc, owner}).
+-record(simulator_manifest, {id, sup_pid, name, desc, owner}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -16,7 +16,7 @@ handle_call({start_simulator, [Name, Desc, User]}, _From, State) ->
     SimId = next_id(Sims),
     case es_simulator_dispatcher:start_child(SimId) of
         {ok, Child} ->
-	    NewSim = #simulator_manifest{id = SimId, name = Name, desc = Desc, owner = User},
+	    NewSim = #simulator_manifest{id = SimId, sup_pid = Child, name = Name, desc = Desc, owner = User},
 	    {reply, {ok, SimId}, State#tracker_state{simulators = [NewSim|Sims]}};
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
@@ -30,9 +30,9 @@ handle_call({start_simulator, [Name, Desc, User]}, _From, State) ->
     end;
 
 handle_call({connect_to_simulator, [SimId, User]}, _From, State) -> 
-    case get_sim(SimId, State) of
+    case sim_info(SimId, State) of
         {ok, _} ->
-	    {ok, Port} = es_interface_dispatcher:start_child(SimId),
+	    {ok, Port} = es_interface_dispatcher:start_child(SimId, User),
 	    {reply, {ok, [{SimId, none, Port}]}, State};
 	Other ->
 	    {reply, Other, State}
@@ -42,10 +42,10 @@ handle_call({get, simulators}, _From, State) ->
     {reply, {ok, State#tracker_state.simulators}, State};
 
 handle_call({get, sim_info, SimId}, _From, State) -> 
-    {reply, get_sim(SimId, State), State};
+    {reply, sim_info(SimId, State), State};
 
 handle_call({get, sim_clients, SimId}, _From, State) -> 
-    Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
+    Reply = sim_clients(SimId),
     {reply, {ok, Reply}, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -65,7 +65,7 @@ next_id(Sims) ->
 	    lists:max(lists:map(fun(S) -> S#simulator_manifest.id end, Sims)) + 1
     end.
 
-get_sim(SimId, State) ->
+sim_info(SimId, State) ->
     Sims = State#tracker_state.simulators,
 
     {FoundSim, _} = lists:partition(fun(S) -> S#simulator_manifest.id == SimId end, Sims),
@@ -80,6 +80,11 @@ get_sim(SimId, State) ->
         true ->
 	    {error, other}
     end.
+
+sim_clients(SimId) ->
+    Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
+    io:format("es_simulator_tracker_server:sim_clients: ~p", [Reply]),
+    Reply.
 
 client_info(Pid) ->
     gen_server:call(Pid, {get, client_info}).

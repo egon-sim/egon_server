@@ -44,6 +44,8 @@ Bugs:
 
 Cleanup:
 %- fix tabs to 4 spaces: egon_client.erl, egon_server.erl, es_app.erl, es_clock_server.erl, es_config_server.erl, es_connection_server.erl, es_convert.erl, es_core.erl, es_core_server.erl, es_flux_buffer_server.erl, es_interface_server.erl, es_makeup_buffer_server.erl, es_ramper_server.erl, es_reactor.erl, es_rod_controller.erl, es_rod_controller_server.erl, es_rod_position.erl, es_rod_position_server.erl, es_simulator_dispatcher.erl, es_simulator_sup.erl, es_simulator_tracker_server.erl, es_sup.erl, es_turbine.erl, es_turbine_server.erl, es_util.erl, es_w7300_server.erl
+* replace es_simulator_tracker_server:sim_clients, es_connection_server:sim_info and es_connection_server:list_sims with handle_call
+
 
 LEGEND:
 

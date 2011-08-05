@@ -1,14 +1,14 @@
 -module(es_interface_dispatcher).
 -include_lib("include/es_common.hrl").
 -behaviour(supervisor).
--export([start_link/1, start_child/1, init/1]).
+-export([start_link/1, start_child/2, init/1]).
 
 start_link(SimId) ->
     supervisor:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId]).
 
-start_child(SimId) ->
+start_child(SimId, User) ->
     io:format("Starting interface server.~n"),
-    {ok, Child} = supervisor:start_child({global, {SimId, ?MODULE}}, []),
+    {ok, Child} = supervisor:start_child({global, {SimId, ?MODULE}}, [User]),
     io:format("New interface server: ~p~n", [Child]),
     Port = gen_server:call(Child, {get, port}),
     io:format("Got port ~p.~n", [Port]),

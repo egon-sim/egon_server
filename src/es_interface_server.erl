@@ -1,16 +1,16 @@
 -module(es_interface_server).
 -include_lib("include/es_common.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
--record(interface_state, {simid, port, lsock, buffer, rsock}).
+-export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
+-record(interface_state, {simid, port, user, lsock, client, buffer, rsock}).
 
-start_link(SimId) -> gen_server:start_link(?MODULE, [SimId], []).
+start_link(SimId, User) -> gen_server:start_link(?MODULE, [SimId, User], []).
 
-init([SimId]) -> 
+init([SimId, User]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
     {ok, Port} = inet:port(LSock),
-    io:format("server listening on port ~p.~n", [Port]),
-    {ok, #interface_state{simid = SimId, port = Port, lsock = LSock, buffer=[]}}.
+    io:format("server for user ~p listening on port ~p.~n", [User, Port]),
+    {ok, #interface_state{simid = SimId, port = Port, user = User, lsock = LSock, buffer=[], client=none}}.
 
 handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("~w ~n", [RawData]),
@@ -47,9 +47,9 @@ handle_info({tcp_closed, _Socket}, State) ->
 %    io:format("socket closed.~n"),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
 %    io:format("socket listening.~n"),
-    {ok, _Sock} = gen_tcp:accept(LSock),
+    {ok, Sock} = gen_tcp:accept(LSock),
 %    io:format("socket restarted.~n"),
-    {noreply, State#interface_state{lsock = LSock, buffer=[]}}.
+    {noreply, State#interface_state{lsock = LSock, client = Sock, buffer=[]}}.
 %    {noreply, State};
     
 %handle_info(timeout, #interface_state{lsock = LSock} = State) ->
@@ -64,13 +64,14 @@ handle_call({get, port}, _From, #interface_state{lsock = LSock} = State) ->
     {ok, Port} = inet:port(LSock),
     {reply, Port, State};
 
-handle_call({get, client_info}, _From, #interface_state{lsock = LSock} = State) ->
-    
-    {reply, client_info(LSock), State}.
+handle_call({get, client_info}, _From, #interface_state{client = Client, user = User} = State)->
+    {ok, Remote} = inet:peername(Client),
+    {ok, Local} = inet:sockname(Client),
+    {reply, {User, Remote, Local}, State}.
 
 handle_cast({listen}, #interface_state{lsock = LSock} = State) ->
-    {ok, _Sock} = gen_tcp:accept(LSock),
-    {noreply, State};
+    {ok, Sock} = gen_tcp:accept(LSock),
+    {noreply, State#interface_state{client = Sock, buffer=[]}};
 
 handle_cast(stop, State) -> {stop, normal, State}.
 
@@ -81,18 +82,18 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-process_data(RawData, State, _Socket, Parent) ->
-    New_state = process_data(RawData, State, _Socket),
+process_data(RawData, State, Socket, Parent) ->
+    New_state = process_data(RawData, State, Socket),
     Parent ! {ok, self(), New_state}.
 
-process_data(RawData, State, _Socket) ->
+process_data(RawData, State, Socket) ->
 %    io:format("~p~n", [RawData]),
     Buffer = State#interface_state.buffer,
     {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
     if
         Newline =:= match ->
 	    New_state = State#interface_state{buffer = Buffer ++ CleanData},
-	    exec_call(New_state, _Socket),
+	    exec_call(New_state, Socket),
 	    S1 = State#interface_state{buffer = []};
 	true ->
 	    S1 = State#interface_state{buffer = Buffer ++ RawData}
@@ -129,17 +130,12 @@ call(#interface_state{simid = SimId}, {ask, sim_info}) ->
 call(_, {ask, sim_info, SimId}) ->
     es_connection_server:sim_info(SimId);
 
-call(#interface_state{simid = SimId}, {ask, sim_clients}) ->
-    call(SimId, {ask, sim_clients, SimId});
-call(#interface_state{simid = SimId, lsock = LSock}, {ask, sim_clients, SimId}) ->
-    client_info(LSock);
+call(#interface_state{simid = SimId} = State, {ask, sim_clients}) ->
+    call(State, {ask, sim_clients, SimId});
+call(#interface_state{simid = SimId} = State, {ask, sim_clients, SimId}) ->
+    es_simulator_tracker_server:sim_clients(SimId);
 call(_, {ask, sim_clients, SimId}) ->
-    es_connection_server:sim_clients(SimId);
+    es_simulator_tracker_server:sim_clients(SimId);
 
 call(_, {ask, list_sims}) ->
     es_connection_server:list_sims().
-
-client_info(LSock) ->
-    {ok, Remote} = inet:peername(LSock),
-    {ok, Local} = inet:sockname(LSock),
-    {Remote, Local}.
