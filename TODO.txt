@@ -10,6 +10,7 @@ General features:
 *0 extract client code from egon_server
 *0 logger server: tracking parameters and storing them
 *0 es_clock_server should send ticks as gen_server:cast()
+*0 hide gen_server:call into module API
 $- es_action_server should log it's actions
 #+ logging everthing
 #0 changing simulation speed
@@ -44,6 +45,7 @@ Bugs:
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
+%0 remove export_all
 
 Cleanup:
 %- fix tabs to 4 spaces: egon_client.erl, egon_server.erl, es_app.erl, es_clock_server.erl, es_config_server.erl, es_connection_server.erl, es_convert.erl, es_core.erl, es_core_server.erl, es_flux_buffer_server.erl, es_interface_server.erl, es_makeup_buffer_server.erl, es_ramper_server.erl, es_reactor.erl, es_rod_controller.erl, es_rod_controller_server.erl, es_rod_position.erl, es_rod_position_server.erl, es_simulator_dispatcher.erl, es_simulator_sup.erl, es_simulator_tracker_server.erl, es_sup.erl, es_turbine.erl, es_turbine_server.erl, es_util.erl, es_w7300_server.erl

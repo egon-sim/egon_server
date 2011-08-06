@@ -8,10 +8,13 @@
 -module(es_log_server).
 
 -behaviour(gen_server).
--import(timer).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+
+% API
+-export([start_link/1]).
 
 % gen_server callbacks
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 % tests
 -export([simple_test/0, general_test/0]).
@@ -40,7 +43,92 @@
 %%  Pid = pid()
 %% @end
 %%-------------------------------------------------------------------
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Returns time between two snapshots in miliseconds.
+%%
+%% @spec cycle_len(SimId::integer()) -> Cycle_len
+%% where
+%%  Cycle_len = integer()
+%% @end
+%%-------------------------------------------------------------------
+cycle_len(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, cycle_len}).
+
+%%-------------------------------------------------------------------
+%% @doc Sets time between two snapshots in miliseconds.
+%%
+%% @spec set_cycle_len(SimId::integer(), Val::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+set_cycle_len(SimId, Val) ->
+    gen_server:call(?SERVER(SimId), {set, cycle_len, Val}).
+
+%%-------------------------------------------------------------------
+%% @doc Get parameters which logger logs.
+%%
+%% @spec parameters(SimId::integer()) -> Parameters
+%% where
+%%  Parameters = [Parameter]
+%%  Parameter = {Name, {Module, Function, Arguments}}
+%%  Name = string()
+%%  Module = atom()
+%%  Function = atom()
+%%  Arguments = [term()]
+%% @end
+%%-------------------------------------------------------------------
+parameters(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, parameters}).
+
+%%-------------------------------------------------------------------
+%% @doc Set parameters which logger logs.
+%%
+%% @spec set_parameters(SimId::integer(), Parameters::list()) -> ok
+%% where
+%%  Parameters = [Parameter]
+%%  Parameter = {Name, {Module, Function, Arguments}}
+%%  Name = string()
+%%  Module = atom()
+%%  Function = atom()
+%%  Arguments = [term()]
+%% @end
+%%-------------------------------------------------------------------
+set_parameters(SimId, Parameters) ->
+    gen_server:call(?SERVER(SimId), {set, parameters, Parameters}).
+
+
+%%-------------------------------------------------------------------
+%% @doc Returns information whether logger server is running or stopped
+%%
+%% @spec status(SimId::integer()) -> Status
+%% where
+%%  Status = running | stopped
+%% @end
+%%-------------------------------------------------------------------
+status(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, status}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns all information collected up until now
+%%
+%% @spec database(SimId::integer()) -> Database
+%% where
+%%  Database = [Entry]
+%%  Entry = {Timestamp, Value}
+%%  Timestamp = {integer(),integer(),integer()}
+%%  Value = {Name, {Module, Function, Arguments}, Result}
+%%  Name = string()
+%%  Module = atom()
+%%  Function = atom()
+%%  Arguments = [term()]
+%%  Result = term()
+%% @end
+%%-------------------------------------------------------------------
+database(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, database}).
+
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -145,29 +233,28 @@ parse_parameter({Name, {M, F, A}}) ->
 simple_test() ->
     SimId = 1,
     {ok, _} = es_log_server:start_link(SimId),
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, cycle_len, 1000}),
-    1000 = gen_server:call({global, {SimId, ?MODULE}}, {get, cycle_len}),
+    ok = set_cycle_len(SimId, 1000),
+    1000 = cycle_len(SimId),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, parameters, [{"Node", {erlang, node, []}}]}),
+    ok = set_parameters(SimId, [{"Node", {erlang, node, []}}]),
 
-    _ = gen_server:call({global, {SimId, ?MODULE}}, {get, parameters}),
+    _ = parameters(SimId),
 
-    stopped = gen_server:call({global, {SimId, ?MODULE}}, {get, status}),
+    stopped = status(SimId),
     ok = gen_server:call({global, {SimId, ?MODULE}}, {action, start}),
-    running = gen_server:call({global, {SimId, ?MODULE}}, {get, status}),
+    running = status(SimId),
     timer:sleep(2000),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, cycle_len, 500}),
-    500 = gen_server:call({global, {SimId, ?MODULE}}, {get, cycle_len}),
+    ok = set_cycle_len(SimId, 500),
+    500 = cycle_len(SimId),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, parameters, [{"Node", {erlang, node, []}}, {"Nodes", {erlang, nodes, []}}]}),
-
-    _ = gen_server:call({global, {SimId, ?MODULE}}, {get, parameters}),
+    ok = set_parameters(SimId, [{"Node", {erlang, node, []}}, {"Nodes", {erlang, nodes, []}}]),
+    _ = parameters(SimId),
 
     timer:sleep(2000),
     ok = gen_server:call({global, {SimId, ?MODULE}}, {action, stop}),
-    stopped = gen_server:call({global, {SimId, ?MODULE}}, {get, status}),
-    Retval = gen_server:call({global, {SimId, ?MODULE}}, {get, database}),
+    stopped = status(SimId),
+    Retval = database(SimId),
     io:format("~p~n", [Retval]),
     stopped = gen_server:call({global, {SimId, ?MODULE}}, stop),
     ok.
@@ -177,12 +264,12 @@ general_test() ->
     {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
     true = egon_server:sim_loaded(SimId),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, cycle_len, 500}),
+    ok = set_cycle_len(SimId, 500),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, parameters, [
+    ok = set_parameters(SimId, [
         {"Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
-    ]}),
+    ]),
 
     ok = gen_server:call({global, {SimId, ?MODULE}}, {action, start}),
     gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
@@ -191,16 +278,16 @@ general_test() ->
     gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
     gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
 
-    ok = gen_server:call({global, {SimId, ?MODULE}}, {set, parameters, [
+    ok = set_parameters(SimId, [
         {"Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
         {"Turbine Tref", {gen_server, call, [{global, {SimId, es_w7300_server}}, {get, tref}]}},
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
-    ]}),
+    ]),
     _ = gen_server:call({global, {SimId, ?MODULE}}, {get, parameters}),
 
     timer:sleep(2000),
     ok = gen_server:call({global, {SimId, ?MODULE}}, {action, stop}),
-    Retval = gen_server:call({global, {SimId, ?MODULE}}, {get, database}),
+    Retval = database(SimId),
     io:format("~p~n", [Retval]),
     egon_server:stop(),
     ok.
