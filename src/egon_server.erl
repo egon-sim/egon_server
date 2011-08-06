@@ -18,6 +18,14 @@ run(Sim) ->
 pause(Sim) ->
     gen_server:call({global, {Sim, es_config_server}}, {freaze_sim}).
 
+new_sim(Params) ->
+    gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
+
+sim_loaded(SimId) ->
+    supervisor:which_children({global, {SimId, es_simulator_sup}}),
+    timer:sleep(100),
+    true.
+
 general_test() ->
     ok = egon_server:start(),
     {ok,_} = egon_client:start(),
