@@ -49,6 +49,9 @@ init([SimId]) ->
    Ramper = {es_ramper_server, {es_ramper_server, start_link, [SimId]},
       temporary, 2000, worker, [es_ramper_server]},
    
-   Children = [Curvebook, Config, Clock, W7300, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface_dispatcher, Turbine, Ramper],
+   Logger = {es_log_server, {es_log_server, start_link, [SimId]},
+      temporary, 2000, worker, [es_log_server]},
+   
+   Children = [Curvebook, Config, Clock, W7300, Rod_Position, Core, Makeup_buffer, Rod_controller, Flux_buffer, Interface_dispatcher, Turbine, Ramper, Logger],
    RestartStrategy = {one_for_one, 1, 2},
    {ok, {RestartStrategy, Children}}.
