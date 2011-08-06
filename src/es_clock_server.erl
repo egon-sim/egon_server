@@ -21,7 +21,8 @@ handle_call({rem_listener, Listener}, _From, State) ->
 
 handle_call({start_ticking}, _From, State) when State#clock_state.cycle_len =/= none ->
     Cycle_len = State#clock_state.cycle_len,
-    {ok, Timer} = timer:apply_interval(Cycle_len, gen_server, call, [?MODULE, {tick}]),
+    SimId = State#clock_state.simid,
+    {ok, Timer} = timer:apply_interval(Cycle_len, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
     timer:start(),
     {reply, ok, State#clock_state{timer=Timer, status=running}};
 
