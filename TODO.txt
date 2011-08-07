@@ -8,7 +8,6 @@ General features:
 *- throw error if something is missing from priv dir
 *- es_config_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
-*0 logger server: tracking parameters and storing them
 *0 es_clock_server should send ticks as gen_server:cast()
 *0 hide gen_server:call into module API
 $- es_action_server should log it's actions
@@ -34,9 +33,6 @@ $+ writing documentation
 #0 building a release (OTP in Action, chapter 10)
 
 Multi-user:
-*- spawn new process for each interface_server request
-*0 Start simulator children on demand and transfer the socket to it
-*+ Ability to connect to existing simulator child
 *0 replace gen_server:call(es_clock_server, {add_listener, {global, {SimId, ?MODULE}}), with gen_server:call(es_clock_server, {add_listener, process_info(self(), registered_name)}),
 
 Bugs:
