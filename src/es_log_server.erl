@@ -301,6 +301,21 @@ parse_parameter(#log_parameter{mfa = {M, F, A}} = Parameter) ->
     Value = apply(M, F, A),
     Parameter#log_parameter{value = Value}.
 
+print_csv_dump(Database) ->
+    List = create_csv_dump(Database),
+    Lines = lists:map(fun(L) -> make_line(L) end, List),
+    format(Lines).
+
+make_line(Line) ->
+    format(make_line(lists:reverse(Line), [])).
+make_line([], Acc) ->
+    io_lib:format("~p", [Acc]);
+make_line([Head|Rest], Acc) ->
+    make_line(Rest, [format(Head)|Acc]).
+
+format(Str) ->
+    lists:flatten(io_lib:format("~p", [Str])).
+
 create_csv_dump([]) -> [];
 create_csv_dump([Head|Rest]) -> 
     create_csv_dump([], [Head|Rest], []).
