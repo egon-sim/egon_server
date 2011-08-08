@@ -168,3 +168,30 @@ bor_dil(SimId, [{Action, Diff} | Rest]) ->
     end,
     New_buffers.
 
+   
+%%%===================================================================
+%%% Test functions
+%%%===================================================================
+
+-include_lib("include/es_common.hrl").
+
+integration_test() ->
+    ok = egon_server:start(),
+    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
+    true = egon_server:sim_loaded(SimId),
+
+    Retval0 = gen_server:call({global, {SimId, es_core_server}}, {get, boron}),
+    io:format("~p~n", [Retval0]),
+
+    Retval = borate(SimId, 10000),
+    io:format("~p~n", [Retval]),
+
+    timer:sleep(2000),
+    Retval1 = gen_server:call({global, {SimId, es_core_server}}, {get, boron}),
+    io:format("~p~n", [Retval1]),
+
+    timer:sleep(2000),
+    Retval2 = gen_server:call({global, {SimId, es_core_server}}, {get, boron}),
+    io:format("~p~n", [Retval2]),
+    egon_server:stop(),
+    ok.
