@@ -49,6 +49,42 @@
 start_link(SimId) ->
     gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
 
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+%%-------------------------------------------------------------------
+%% @doc Initiates boration of RCS
+%%
+%% @spec borate(SimId::integer(), Volume::integer()) -> Boron_diff
+%% where
+%%  Volume = integer() % volume of boron to add
+%%  Boron_diff = integer() % change in boron concentration that will be
+%%                           achieved once boration is done
+%% @end
+%%-------------------------------------------------------------------
+borate(SimId, Volume) ->
+    gen_server:call(?SERVER(SimId), {action, borate, [none, Volume]}).
+
+%%-------------------------------------------------------------------
+%% @doc Initiates dilution of RCS
+%%
+%% @spec dilute(SimId::integer(), Volume::integer()) -> Boron_diff
+%% where
+%%  Volume = integer() % volume of water to add
+%%  Boron_diff = integer() % change in boron concentration that will be
+%%                           achieved once dilution is done
+%% @end
+%%-------------------------------------------------------------------
+dilute(SimId, Volume) ->
+    gen_server:call(?SERVER(SimId), {action, dilute, [none, Volume]}).
+
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
