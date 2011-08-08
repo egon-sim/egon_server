@@ -1,28 +1,58 @@
+%%%-------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server borates and dilutes RCS in controlled manner. Change
+%%%      of boron concentration in RCS in never a step function, but
+%%%      ramp. This module provides required ramp.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(es_makeup_buffer_server).
--include_lib("include/es_common.hrl").
+
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(makeup_buffer_state, {simid, buffers, cycle_len, boron_diff_per_cycle}).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+% API
+-export([
+	start_link/1,
+	stop_link/1,
+	borate/2,
+	dilute/2
+	]).
 
-boron_diff(RCS, TNK, VADD, WADD, W) ->
-    (TNK - RCS) * (1 - math:exp(-VADD*WADD/W)).
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-bor_dil(_SimId, []) ->
-    [];
-bor_dil(SimId, [{Action, Diff} | Rest]) ->
-    io:format("~w ~n", [Diff]),    
-    gen_server:call({global, {SimId, es_core_server}}, {action, Action, 1}),
-    New_diff = Diff - 1,
-    if
-        New_diff > 0 ->
-	    New_buffers = lists:append([{Action, New_diff}], bor_dil(SimId, Rest));
-	true ->
-	    New_buffers = bor_dil(SimId, Rest)
-    end,
-    New_buffers.
-   
+% tests
+-export([integration_test/0]).
+
+% data structures
+-record(makeup_buffer_state, {
+			     simid, % ID of a simulator to which this log server belongs
+			     buffers, % list of all borations and dilutions currently in process
+			     cycle_len, % number of miliseconds between alterations of boron concentration
+			     boron_diff_per_cycle % ammount of boron added/removed in eash alteration
+			     }).
+
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
 init([SimId]) -> 
     io:format("ProcName: ~p~n", [process_info(self(), registered_name)]),
     gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
@@ -41,10 +71,12 @@ handle_call({get, boron_diff_per_cycle}, _From, State) ->
 handle_call({set, boron_diff_per_cycle, Val}, _From, State) ->
     {reply, ok, State#makeup_buffer_state{boron_diff_per_cycle=Val}};
 
-handle_call({action, borate, [RCS, VADD]}, _From, State) ->
+handle_call({action, borate, [_RCS, VADD]}, _From, State) ->
+    SimId = State#makeup_buffer_state.simid,
     TNK = 7000,
     WADD = 1.00663,
     W = 140933,
+    RCS = gen_server:call({global, {SimId, es_core_server}}, {get, boron}),
     Boron = boron_diff(RCS, TNK, VADD, WADD, W),
     New_buffers = lists:append(State#makeup_buffer_state.buffers, [{borate, Boron}]),
     {reply, Boron, State#makeup_buffer_state{buffers=New_buffers}};
@@ -77,4 +109,26 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+boron_diff(RCS, TNK, VADD, WADD, W) ->
+    (TNK - RCS) * (1 - math:exp(-VADD*WADD/W)).
+
+bor_dil(_SimId, []) ->
+    [];
+bor_dil(SimId, [{Action, Diff} | Rest]) ->
+    io:format("~w ~n", [Diff]),    
+    gen_server:call({global, {SimId, es_core_server}}, {action, Action, 1}),
+    New_diff = Diff - 1,
+    if
+        New_diff > 0 ->
+	    New_buffers = lists:append([{Action, New_diff}], bor_dil(SimId, Rest));
+	true ->
+	    New_buffers = bor_dil(SimId, Rest)
+    end,
+    New_buffers.
 
