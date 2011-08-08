@@ -239,7 +239,7 @@ handle_call({get, database}, _From, State) ->
 
 handle_call({get, csv_dump}, _From, State) ->
     Database = lists:reverse(State#log_state.database),
-    Dump = print_csv_dump(Database),
+    Dump = create_csv_dump(Database),
     {reply, Dump, State};
 
 handle_call({action, start}, _From, State) ->
@@ -301,9 +301,6 @@ parse_parameter(#log_parameter{mfa = {M, F, A}} = Parameter) ->
     Value = apply(M, F, A),
     Parameter#log_parameter{value = Value}.
 
-print_cvs_dump(Database) ->
-    create_cvs_dump(Database).
-
 create_csv_dump([]) -> [];
 create_csv_dump([Head|Rest]) -> 
     create_csv_dump([], [Head|Rest], []).
@@ -357,7 +354,7 @@ unit_test() ->
     {error, {not_set, parameters}} = start_logging(SimId),
     ok = add_parameters(SimId, [{"Node", {erlang, node, []}}]),
 
-    _ = parameters(SimId),
+    [#log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}] = parameters(SimId),
 
     stopped = status(SimId),
     ok = start_logging(SimId),
@@ -368,12 +365,16 @@ unit_test() ->
     500 = cycle_len(SimId),
 
     ok = add_parameter(SimId, {"Nodes", {erlang, nodes, []}}),
-    _ = parameters(SimId),
+    [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
+    #log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}] = parameters(SimId),
 
     timer:sleep(2000),
     ok = stop_logging(SimId),
     stopped = status(SimId),
-    _ = database(SimId),
+    Database = database(SimId),
+    5 = length(Database),
+    #log_entry{parameters = [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}}, 
+    #log_parameter{name = "Node", mfa = {erlang, node, []}}]} = lists:last(Database),
     Retval = csv_dump(SimId),
     io:format("~p~n", [Retval]),
     stopped = stop_link(SimId),
@@ -401,11 +402,9 @@ integration_test() ->
     ok = add_parameter(SimId, 
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
     ),
-    _ = parameters(SimId),
 
     timer:sleep(2000),
     ok = stop_logging(SimId),
-    _ = database(SimId),
     Retval = csv_dump(SimId),
     io:format("~p~n", [Retval]),
     egon_server:stop(),
