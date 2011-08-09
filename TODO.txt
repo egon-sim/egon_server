@@ -1,5 +1,4 @@
 Protocol:
-*- for each server generate a list of messages it can receive
 *- assemble by hand a list of messages which es_interface_server can send to other servers
 #- {set, flux_now, Flux} and {set_now, flux, Flux} transform to {set, flux, Flux}
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
@@ -9,7 +8,6 @@ General features:
 *- es_config_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
 *0 es_clock_server should send ticks as gen_server:cast()
-*0 hide gen_server:call into module API
 $- es_action_server should log it's actions
 #+ logging everthing
 #0 changing simulation speed
@@ -27,8 +25,6 @@ Erlang/OTP problem:
 #? if supervisor fails to start it's children, no error is generated
 
 Userfriendlyness:
-$+ writing unit tests
-$+ writing documentation
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
 #0 building a release (OTP in Action, chapter 10)
 
@@ -37,15 +33,9 @@ Multi-user:
 
 Bugs:
 *- [34,228,228,228,228,34] = es_interface_client:send(S1, "{get, es_rod_position_server, control_position}\n") - remove quotes (34)
-%- remove all mention of ports
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
-%0 remove export_all
-
-Cleanup:
-%- fix tabs to 4 spaces: egon_client.erl, egon_server.erl, es_app.erl, es_clock_server.erl, es_config_server.erl, es_connection_server.erl, es_convert.erl, es_core.erl, es_core_server.erl, es_flux_buffer_server.erl, es_interface_server.erl, es_makeup_buffer_server.erl, es_ramper_server.erl, es_reactor.erl, es_rod_controller.erl, es_rod_controller_server.erl, es_rod_position.erl, es_rod_position_server.erl, es_simulator_dispatcher.erl, es_simulator_sup.erl, es_simulator_tracker_server.erl, es_sup.erl, es_turbine.erl, es_turbine_server.erl, es_util.erl, es_w7300_server.erl
-* replace es_simulator_tracker_server:sim_clients, es_connection_server:sim_info and es_connection_server:list_sims with handle_call
 
 
 LEGEND:
