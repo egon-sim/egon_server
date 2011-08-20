@@ -7,6 +7,7 @@ FOR EACH MODULE:
 * remove "port" if left
 * remove export_all
 * replace handle_call with handle_cast where possible
+* add error_logger:info_report to important calls
 
 FOR PARTICULAR MODULE:
 * es_connection_server:list_sims implement with with handle_call
@@ -27,7 +28,7 @@ BACKLOG (x = DONE):
 [ ] es_flux_buffer_server.erl
 [ ] es_interface_dispatcher.erl
 [ ] es_interface_server.erl
-[x] es_log_server.erl
+[?] es_log_server.erl
 [ ] es_makeup_buffer_server.erl
 [ ] es_primary_sup.erl
 [ ] es_ramper_server.erl
