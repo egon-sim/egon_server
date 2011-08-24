@@ -2,7 +2,8 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server logging various parameters of simulator and stores
-%%%      them so they can be retreived and analyzed at later time.
+%%%      them so they can be retreived and analyzed at later
+%%%      time. Started by es_utility_sup.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(es_log_server).

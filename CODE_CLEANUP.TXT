@@ -28,7 +28,7 @@ BACKLOG (x = DONE):
 [ ] es_flux_buffer_server.erl
 [ ] es_interface_dispatcher.erl
 [ ] es_interface_server.erl
-[?] es_log_server.erl
+[x] es_log_server.erl
 [ ] es_makeup_buffer_server.erl
 [ ] es_primary_sup.erl
 [ ] es_ramper_server.erl
@@ -45,5 +45,5 @@ BACKLOG (x = DONE):
 [ ] es_turbine.erl
 [ ] es_turbine_server.erl
 [ ] es_util.erl
-[ ] es_utility_sup.erl
+[x] es_utility_sup.erl
 [ ] es_w7300_server.erl
