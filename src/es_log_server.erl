@@ -211,6 +211,7 @@ handle_call({set, cycle_len, Val}, _From, State) when State#log_state.status =:=
     {reply, ok, State#log_state{cycle_len=Val}};
 
 handle_call({set, cycle_len, Val}, _From, State) when State#log_state.status =:= running ->
+    error_logger:info_report(["Setting log server cycle_len", {cycle_len, Val}]),
     SimId = State#log_state.simid,
     Old_timer = State#log_state.timer,
 
@@ -223,11 +224,17 @@ handle_call({set, cycle_len, Val}, _From, State) when State#log_state.status =:=
 handle_call({get, parameters}, _From, State) ->
     {reply, State#log_state.parameters, State};
 
+handle_call({set, parameters, []}, _From, State) ->
+    error_logger:info_report(["Clearing parameters from log server"]),
+    {reply, ok, State#log_state{parameters=[]}};
+    
 handle_call({set, parameters, Val}, _From, State) ->
+    error_logger:info_report(["Setting parameters to log server", {parameters, Val}]),
     {reply, ok, State#log_state{parameters=Val}};
 
 handle_call({action, add_parameter, {Name, {Module, Function, Arguments}}}, _From, State) ->
     New_param = #log_parameter{name = Name, mfa = {Module, Function, Arguments}},
+    error_logger:info_report(["Adding parameter to log server", {parameter, New_param}]),
     Parameters = State#log_state.parameters,
     {reply, ok, State#log_state{parameters=[New_param|Parameters]}};
 
@@ -242,22 +249,24 @@ handle_call({get, csv_dump}, _From, State) ->
     Dump = create_csv_dump(Database),
     {reply, Dump, State};
 
+handle_call({action, start}, _From, State) when State#log_state.cycle_len =:= none ->
+    error_logger:info_report(["Starting log server failed", {reason, "cycle_len not set"}]),
+    {reply, {error, {not_set, cycle_len}}, State};
+
+handle_call({action, start}, _From, State) when State#log_state.parameters =:= [] ->
+    error_logger:info_report(["Starting log server failed", {reason, "parameters not set"}]),
+    {reply, {error, {not_set, parameters}}, State};
+
 handle_call({action, start}, _From, State) ->
     SimId = State#log_state.simid,
     Cycle_len = State#log_state.cycle_len,
-    if
-        Cycle_len =:= none ->
-	    {reply, {error, {not_set, cycle_len}}, State};
-        State#log_state.parameters =:= [] ->
-	    {reply, {error, {not_set, parameters}}, State};
-        true ->
-	    Cycle_len = State#log_state.cycle_len,
-	    {ok, Timer} = timer:apply_interval(Cycle_len, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
-	    timer:start(),
-	    {reply, ok, State#log_state{timer=Timer, status=running}}
-    end;
+    error_logger:info_report(["Starting log server", {cycle_len, Cycle_len}]),
+    {ok, Timer} = timer:apply_interval(Cycle_len, gen_server, call, [?SERVER(SimId), {tick}]),
+    timer:start(),
+    {reply, ok, State#log_state{timer=Timer, status=running}};
 
 handle_call({action, stop}, _From, State) ->
+    error_logger:info_report(["Stopping log server"]),
     timer:cancel(State#log_state.timer),
     {reply, ok, State#log_state{timer=none, status=stopped}};
 
@@ -270,7 +279,7 @@ handle_call({tick}, _From, State) when State#log_state.status =:= stopped ->
     {reply, {error, logger_stopped}, State#log_state{timer=none, status=stopped}};
 
 handle_call({tick}, _From, State) ->
-    io:format("corrupt counter"),
+    error_logger:info_report(["Corrupt log_server", {reason, "log_server status not in [running, stopped]"}]),
     {reply, error, State};
 
 handle_call(stop, _From, State) ->
