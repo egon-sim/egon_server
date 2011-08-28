@@ -33,6 +33,7 @@ Multi-user:
 
 Bugs:
 *- [34,228,228,228,228,34] = es_interface_client:send(S1, "{get, es_rod_position_server, control_position}\n") - remove quotes (34)
+*0 If all simulators are stopped, then egon_server:new_sim cannot start a new one.
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded

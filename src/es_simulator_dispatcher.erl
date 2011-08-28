@@ -13,7 +13,8 @@ start_child(SimId) ->
 
 stop_child(Pid) ->
     io:format("Stopping child~n"),
-    supervisor:terminate_child(?SERVER, Pid).
+    supervisor:terminate_child(?SERVER, Pid),
+    supervisor:delete_child(?SERVER, Pid).
 
 init([]) -> 
     Simulator = {es_simulator_sup, {es_simulator_sup, start_link, []}, temporary, 2000, supervisor, [es_simulator_sup]},
