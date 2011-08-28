@@ -18,6 +18,11 @@ run(Sim) ->
 pause(Sim) ->
     gen_server:call({global, {Sim, es_config_server}}, {freaze_sim}).
 
+new_sim(Name, Desc, User) ->
+    new_sim([Name, Desc, User]).
+
+new_sim(doc) ->
+    "new_sim(Name, Desc, User)";
 new_sim(Params) ->
     gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
 
