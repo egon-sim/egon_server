@@ -29,6 +29,12 @@ handle_call({start_simulator, [Name, Desc, User]}, _From, State) ->
 	    {reply, Other, State}
     end;
 
+handle_call({stop_simulator, SimId}, _From, State) -> 
+    Pid = get_pid(SimId, State),
+    es_simulator_dispatcher:stop_child(Pid),
+    NewState = remove_sim(SimId, State),
+    {reply, {ok, stopped}, NewState};
+
 handle_call({connect_to_simulator, [SimId, User]}, _From, State) -> 
     case sim_info(SimId, State) of
         {ok, _} ->
@@ -88,3 +94,22 @@ sim_clients(SimId) ->
 
 client_info(Pid) ->
     gen_server:call(Pid, {get, client_info}).
+
+get_pid(SimId, State) ->
+    Sims = State#tracker_state.simulators,
+    get_pid_rec(SimId, Sims).
+
+get_pid_rec(_, []) ->
+    none;
+get_pid_rec(SimId, [#simulator_manifest{id = SimId, sup_pid = Pid}|_]) ->
+    Pid;
+get_pid_rec(SimId, [#simulator_manifest{id = Id}|Rest]) ->
+    io:format("id: ~p~n", [Id]),
+    get_pid_rec(SimId, Rest);
+get_pid_rec(SimId, [_|Rest]) ->
+    get_pid_rec(SimId, Rest).
+
+remove_sim(SimId, State) ->
+    Sims = State#tracker_state.simulators,
+    NewSims = lists:filter(fun(Sim) -> Sim#simulator_manifest.id =/= SimId end, Sims),
+    State#tracker_state{simulators = NewSims}.

@@ -99,6 +99,8 @@ exec_call(State, Socket) ->
 	    start_new_simulator(Params);
         {ask, connect_to_simulator, Params} ->
             connect_to_simulator(Params);
+        {ask, stop_simulator, SimId} ->
+            stop_simulator(SimId);
 	{ask, sim_info} ->
 	    sim_info();
 	{ask, sim_info, SimId} ->
@@ -112,6 +114,7 @@ exec_call(State, Socket) ->
 	true ->
 	    unknown_request
     end,
+%    io:format("reply: ~p~n", [Reply]),
     gen_tcp:send(Socket, io_lib:fwrite("~p", [Reply])),
     ok.
 
@@ -132,6 +135,10 @@ connect_to_simulator(Params) ->
     [SimId|_] = Params,
     {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Params}),
     {connected, Port}.
+
+stop_simulator(SimId) ->
+    {ok, stopped} = gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}),
+    {ok, stopped}.
 
 sim_info() ->
     not_connected_to_a_simulator.
