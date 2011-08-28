@@ -30,6 +30,10 @@ new_sim(doc) ->
 new_sim(Params) ->
     gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
 
+list_sims() ->
+    {ok, List} = gen_server:call(es_simulator_tracker_server, {get, simulators}),
+    List.
+
 sim_loaded(SimId) ->
     supervisor:which_children({global, {SimId, es_simulator_sup}}),
     timer:sleep(100),
