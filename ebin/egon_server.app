@@ -39,5 +39,6 @@
    {applications, [kernel, stdlib
    , sasl
    ]},
-   {mod, {es_app, []}}
+   {mod, {es_app, []}},
+   {env, [{port, 1055}]}
 ]}.

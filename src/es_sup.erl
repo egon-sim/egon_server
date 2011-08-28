@@ -11,10 +11,11 @@
 -define(SERVER, ?MODULE).
 
 start_link() ->
-   supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+   {ok, Port} = application:get_env(egon_server, port),
+   supervisor:start_link({local, ?SERVER}, ?MODULE, [Port]).
 
-init([]) ->
-   Connection = {es_connection_server, {es_connection_server, start_link, [1055]},
+init([Port]) ->
+   Connection = {es_connection_server, {es_connection_server, start_link, [Port]},
       permanent, 2000, worker, [es_connection_server]},
    
    Tracker = {es_simulator_tracker_server, {es_simulator_tracker_server, start_link, []},
