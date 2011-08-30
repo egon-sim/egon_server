@@ -57,7 +57,7 @@ init([SimId]) ->
         temporary, 2000, worker, [es_log_server]},
     
     Children = [Config, Clock, Interface_dispatcher, Logger],
-    RestartStrategy = {one_for_one, 1, 2},
+    RestartStrategy = {one_for_one, 4, 2},
     {ok, {RestartStrategy, Children}}.
 
 
