@@ -43,9 +43,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 set_up_defaults(State) ->
-    SimId = State#config_state.simid,
     load_snapshot(State, "priv/snapshots/full_power.snapshot"),
-    gen_server:call({global, {SimId, es_clock_server}}, {start_ticking}),
     ok.
 
 load_snapshot(#config_state{simid = SimId}, Path) ->
