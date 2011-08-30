@@ -114,6 +114,11 @@ exec_call(State, Socket) ->
 %    io:format("Server sent: ~w~n", [Result]),
     ok.
 
+call(#interface_state{simid = SimId}, {action, es_clock_server, start}) ->
+    gen_server:call({global, {SimId, es_clock_server}}, {start_ticking});
+call(#interface_state{simid = SimId}, {action, es_clock_server, stop}) ->
+    gen_server:call({global, {SimId, es_clock_server}}, {stop_ticking});
+
 call(#interface_state{simid = SimId}, {get, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {get, Param});
 call(#interface_state{simid = SimId}, {get, Server, Param, Args}) ->
@@ -132,7 +137,7 @@ call(_, {ask, sim_info, SimId}) ->
 
 call(#interface_state{simid = SimId} = State, {ask, sim_clients}) ->
     call(State, {ask, sim_clients, SimId});
-call(#interface_state{simid = SimId} = State, {ask, sim_clients, SimId}) ->
+call(#interface_state{simid = SimId}, {ask, sim_clients, SimId}) ->
     es_simulator_tracker_server:sim_clients(SimId);
 call(_, {ask, sim_clients, SimId}) ->
     es_simulator_tracker_server:sim_clients(SimId);

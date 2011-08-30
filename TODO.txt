@@ -37,7 +37,7 @@ Bugs:
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
-
+%- rename es_clock_server:handle_call({start_ticking}); to es_clock_server:handle_call({action, start_ticking}); and es_clock_server:handle_call({stop_ticking}); to es_clock_server:handle_call({action, stop_ticking});
 
 LEGEND:
 
