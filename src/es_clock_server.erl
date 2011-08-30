@@ -53,13 +53,9 @@ handle_call({set, cycle_len, Cycle_len}, _From, State) when State#clock_state.st
     {reply, ok, New_state};
 
 handle_call({get, seconds_to_ticks, Secs}, _From, State) ->
-    io:format("foo~n"),
     Cycle_len = State#clock_state.cycle_len,
-    io:format("bar~n"),
     Millisecs = Secs * 1000,
-    io:format("baz~n"),
     Retval = Millisecs / Cycle_len,
-    io:format("quux~n"),
     {reply, Retval, State};
 
 handle_call({get, milliseconds_to_ticks, Millisecs}, _From, State) ->
