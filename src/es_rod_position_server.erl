@@ -67,41 +67,114 @@ start_link(SimId) ->
 stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of control rod position counter.
+%%
+%% @spec control_position_counter(SimId::integer()) -> integer()
+%% @end
+%%-------------------------------------------------------------------
 control_position_counter(SimId) ->
     gen_server:call(?SERVER(SimId), {get, control_position_counter}).
 
+%%-------------------------------------------------------------------
+%% @doc Sets value of control rod position counter.
+%%
+%% @spec set_control_position_counter(SimId::integer(), Val::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
 set_control_position_counter(SimId, Val) ->
     gen_server:call(?SERVER(SimId), {set, control_position_counter, Val}).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of control rod group positions as an array.
+%%
+%% @spec control_position(SimId::integer()) -> [integer()]
+%% @end
+%%-------------------------------------------------------------------
 control_position(SimId) ->
     gen_server:call(?SERVER(SimId), {get, control_position}).
 
+%%-------------------------------------------------------------------
+%% @doc Sets value of control rod position as an array.
+%%
+%% @spec set_control_position(SimId::integer(), Val::[integer()]) -> ok
+%% @end
+%%-------------------------------------------------------------------
 set_control_position(SimId, Val) ->
     gen_server:call(?SERVER(SimId), {set, control_position, Val}).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of control rod group position.
+%%
+%% @spec control_position(SimId::integer(), Group::integer()) -> integer()
+%% @end
+%%-------------------------------------------------------------------
 control_position(SimId, Group) ->
-    gen_server:call(?SERVER(SimId), {get, control_position_counter, Group}).
+    gen_server:call(?SERVER(SimId), {get, control_position, Group}).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of shutdown rod position counter.
+%%
+%% @spec shutdown_position_counter(SimId::integer()) -> integer()
+%% @end
+%%-------------------------------------------------------------------
 shutdown_position_counter(SimId) ->
     gen_server:call(?SERVER(SimId), {get, shutdown_position_counter}).
 
+%%-------------------------------------------------------------------
+%% @doc Sets value of shutdown rod position counter.
+%%
+%% @spec set_shutdown_position_counter(SimId::integer(), Val::integer()) -> integer()
+%% @end
+%%-------------------------------------------------------------------
 set_shutdown_position_counter(SimId, Val) ->
     gen_server:call(?SERVER(SimId), {set, shutdown_position_counter, Val}).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of shutdown rod group positions as an array.
+%%
+%% @spec shutdown_position(SimId::integer()) -> [integer()]
+%% @end
+%%-------------------------------------------------------------------
 shutdown_position(SimId) ->
-    gen_server:call(?SERVER(SimId), {get, shutdown_position_counter}).
+    gen_server:call(?SERVER(SimId), {get, shutdown_position}).
 
+%%-------------------------------------------------------------------
+%% @doc Returns value of shutdown rod group position.
+%%
+%% @spec shutdown_position(SimId::integer(), Group::integer()) -> integer()
+%% @end
+%%-------------------------------------------------------------------
 shutdown_position(SimId, Group) ->
     gen_server:call(?SERVER(SimId), {set, shutdown_position, Group}).
 
+%%-------------------------------------------------------------------
+%% @doc Moves control rods one step into reactor core.
+%%
+%% @spec step_in(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
 step_in(SimId) ->
     gen_server:call(?SERVER(SimId), {action, step_in}).
 
+%%-------------------------------------------------------------------
+%% @doc Moves control rods one step out of reactor core.
+%%
+%% @spec step_out(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
 step_out(SimId) ->
     gen_server:call(?SERVER(SimId), {action, step_out}).
 
-integral_worth(SimId, [Burnup, _Flux]) ->
-    gen_server:call(?SERVER(SimId), {get, integral_worth, [Burnup, _Flux]}).
+%%-------------------------------------------------------------------
+%% @doc Returns integral worth of control rods inserted into reactor
+%%      core.
+%%
+%% @spec integral_worth(SimId::integer(), Burnup::integer(), Flux::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+integral_worth(SimId, Burnup, Flux) ->
+    gen_server:call(?SERVER(SimId), {get, integral_worth, [Burnup, Flux]}).
 
 
 %%%===================================================================
