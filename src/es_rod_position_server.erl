@@ -25,7 +25,7 @@
 	 shutdown_position/2,
 	 step_in/1,
 	 step_out/1,
-	 integral_worth/2
+	 integral_worth/3
 	]).
 
 % gen_server callbacks
