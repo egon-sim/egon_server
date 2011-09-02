@@ -9,7 +9,8 @@ General features:
 *0 extract client code from egon_server
 *0 es_clock_server should send ticks as gen_server:cast()
 $- es_action_server should log it's actions
-#+ logging everthing
+#+ every server should have a function which sends all of its exported state variables to es_log_server; that function should be called right after init and every time state is changed -> therefore es_log_server will have a log of all values changes and will be able to plot graphs
+#- implement es_log_server:get_time_range(SimId, StartTime, StopTime, Points) which will return list of values of Points in time range from StartTime to StopTime
 #0 changing simulation speed
 #- add logging to configuration file
 
