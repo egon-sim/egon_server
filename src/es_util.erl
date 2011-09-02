@@ -9,7 +9,7 @@ modules() ->
     modules("ebin/egon_server.app").
 
 modules(App_file) ->
-    {ok, [{application, _, [{description, _}, {vsn, _}, {modules, Modules}, {registered, _}, {applications, _}, {mod, _}]}]} = file:consult(App_file),
+    {ok, [{application, _, [{description, _}, {vsn, _}, {modules, Modules}, {registered, _}, {applications, _}, {mod, _}, {env, _}]}]} = file:consult(App_file),
     Modules.
 
 generate_compile() ->
