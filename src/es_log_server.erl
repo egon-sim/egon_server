@@ -76,7 +76,7 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
 %%
-%% @spec stop_link(SimId::integer()) -> ok
+%% @spec stop_link(SimId::integer()) -> stopped
 %% @end
 %%-------------------------------------------------------------------
 stop_link(SimId) ->

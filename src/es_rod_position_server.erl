@@ -42,7 +42,9 @@
 	  control_rod_stops, % list of positions at which control rods stop
 	  overlap, % overlap of control rods
 	  shutdown_position_counter, % position counter of shutdown rods
-	  shutdown_group_position % list of positions of each shutdown rod
+	  shutdown_group_position, % list of positions of each shutdown rod
+	  no_of_shutdown_groups, % number of groups of shutdown rods
+	  shutdown_rod_length % length of shutdown rods
 }).
 
 %%%===================================================================
@@ -63,7 +65,7 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
 %%
-%% @spec stop_link(SimId::integer()) -> ok
+%% @spec stop_link(SimId::integer()) -> stopped
 %% @end
 %%-------------------------------------------------------------------
 stop_link(SimId) ->
@@ -186,7 +188,10 @@ integral_worth(SimId, Burnup, Flux) ->
 init([SimId]) -> 
     Control_rod_stops = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [control_rod_stops]}),
     Overlap = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [overlap]}),
-    {ok, #rod_position_state{simid = SimId, control_rod_stops = Control_rod_stops, overlap = Overlap}}.
+    No_of_shutdown_groups = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_number]}),
+    Shutdown_rod_length = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_length]}),
+
+    {ok, #rod_position_state{simid = SimId, control_rod_stops = Control_rod_stops, overlap = Overlap, no_of_shutdown_groups = No_of_shutdown_groups, shutdown_rod_length = Shutdown_rod_length}}.
 
 handle_call({get, control_position_counter}, _From, State) ->
     {reply, State#rod_position_state.control_position_counter, State};
@@ -206,9 +211,8 @@ handle_call({get, control_position, Group}, _From, State) ->
 handle_call({get, shutdown_position_counter}, _From, State) ->
     {reply, State#rod_position_state.shutdown_position_counter, State};
 handle_call({set, shutdown_position_counter, Counter}, _From, State) ->
-    SimId = State#rod_position_state.simid,
-    No_of_groups = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_number]}),
-    Rod_length = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_length]}),
+    No_of_groups = State#rod_position_state.no_of_shutdown_groups,
+    Rod_length = State#rod_position_state.shutdown_rod_length,
     if
         Counter > Rod_length ->
 	    Counter_1 = Rod_length;
@@ -306,17 +310,16 @@ position_to_counter([Letter|Number], Control_rod_stops, Last_overlap, Overlap, C
 -include_lib("include/es_common.hrl").
 
 unit_test() ->
-    ok.
-
-integration_test() ->
-    ok = egon_server:start(),
-    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
-    true = egon_server:sim_loaded(SimId),
+    SimId = 1,
+    {ok, _} = es_curvebook_server:start_link(SimId),
+    {ok, _} = es_rod_position_server:start_link(SimId),
+    ok = es_rod_position_server:set_control_position_counter(SimId, 612),
+    ok = es_rod_position_server:set_shutdown_position_counter(SimId, 228),
 
     612 = control_position_counter(SimId),
     [228, 228, 228, 228] = control_position(SimId),
     228 = shutdown_position_counter(SimId),
-    228 = shutdown_position(SimId),
+    [228, 228] = shutdown_position(SimId),
     ok = set_control_position(SimId, "A50"),
     [50, 0, 0, 0] = control_position(SimId),
     ok = set_control_position(SimId, "B50"),
@@ -324,7 +327,17 @@ integration_test() ->
     ok = set_control_position(SimId, "C50"),
     [228, 178, 50, 0] = control_position(SimId),
     ok = set_control_position(SimId, "D50"),
-    [0, 228, 228, 178, 50] = [0|control_position(SimId)],
+    [228, 228, 178, 50] = control_position(SimId),
+
+    stopped = es_rod_position_server:stop_link(SimId),
+    stopped = es_curvebook_server:stop_link(SimId),
+    ok.
+
+integration_test() ->
+    ok = egon_server:start(),
+    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
+    true = egon_server:sim_loaded(SimId),
+
 
     ok = egon_server:stop(),
     ok.
