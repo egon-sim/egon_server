@@ -418,11 +418,11 @@ integration_test() ->
     ]),
 
     ok = start_logging(SimId),
-    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
-    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
+    es_rod_position_server:step_in(SimId),
+    es_rod_position_server:step_in(SimId),
     timer:sleep(2000),
-    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
-    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in}),
+    es_rod_position_server:step_in(SimId),
+    es_rod_position_server:step_in(SimId),
 
     ok = add_parameter(SimId, 
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
