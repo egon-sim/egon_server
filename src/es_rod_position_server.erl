@@ -17,7 +17,7 @@
 	 control_position_counter/1,
 	 set_control_position_counter/2,
 	 control_position/1,
-	 set_control_position/2,
+	 set_control_position_str/2,
 	 control_position/2,
 	 shutdown_position_counter/1,
 	 set_shutdown_position_counter/2,
@@ -99,13 +99,13 @@ control_position(SimId) ->
     gen_server:call(?SERVER(SimId), {get, control_position}).
 
 %%-------------------------------------------------------------------
-%% @doc Sets value of control rod position as an array.
+%% @doc Sets value of control rod position as an string.
 %%
-%% @spec set_control_position(SimId::integer(), Val::[integer()]) -> ok
+%% @spec set_control_position(SimId::integer(), Val::string()) -> ok
 %% @end
 %%-------------------------------------------------------------------
-set_control_position(SimId, Val) ->
-    gen_server:cast(?SERVER(SimId), {set, control_position, Val}).
+set_control_position_str(SimId, Val) ->
+    gen_server:cast(?SERVER(SimId), {set, control_position_str, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of control rod group position.
@@ -244,7 +244,7 @@ handle_call({set, control_position_counter, Counter}, _From, State) ->
     Control_group_position = counter_to_position(Counter, State),
     {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}};
 
-handle_call({set, control_position, Val}, _From, State) ->
+handle_call({set, control_position_str, Val}, _From, State) ->
     NewCounter = position_to_counter(Val, State),
     Control_group_position = counter_to_position(NewCounter, State),
     {reply, ok, State#rod_position_state{control_position_counter = NewCounter, control_group_position = Control_group_position}};
@@ -334,17 +334,24 @@ unit_test() ->
     ok = step_out(SimId),
     1 = control_position_counter(SimId),
 
+    ok = set_control_position_str(SimId, "A50"),
+    [50, 0, 0, 0] = control_position(SimId),
+    ok = set_control_position_str(SimId, "B50"),
+    [178, 50, 0, 0] = control_position(SimId),
+    ok = set_control_position_str(SimId, "C50"),
+    [228, 178, 50, 0] = control_position(SimId),
+    228 = control_position(SimId, 0),
+    178 = control_position(SimId, 1),
+    50 = control_position(SimId, 2),
+    0 = control_position(SimId, 3),
+
+    ok = set_control_position_str(SimId, "D50"),
+    [228, 228, 178, 50] = control_position(SimId),
+
     228 = shutdown_position_counter(SimId),
     [228, 228] = shutdown_position(SimId),
-
-    ok = set_control_position(SimId, "A50"),
-    [50, 0, 0, 0] = control_position(SimId),
-    ok = set_control_position(SimId, "B50"),
-    [178, 50, 0, 0] = control_position(SimId),
-    ok = set_control_position(SimId, "C50"),
-    [228, 178, 50, 0] = control_position(SimId),
-    ok = set_control_position(SimId, "D50"),
-    [228, 228, 178, 50] = control_position(SimId),
+    228 = shutdown_position(SimId, 0),
+    228 = shutdown_position(SimId, 1),
 
     stopped = stop_link(SimId),
     stopped = es_curvebook_server:stop_link(SimId),
