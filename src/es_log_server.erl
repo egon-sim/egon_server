@@ -373,9 +373,7 @@ unit_test() ->
     {ok, _} = es_log_server:start_link(SimId),
 
     {error, {not_set, cycle_len}} = start_logging(SimId),
-    io:format("1~n"),
     ok = set_cycle_len(SimId, 1000),
-    io:format("2~n"),
     1000 = cycle_len(SimId),
 
     {error, {not_set, parameters}} = start_logging(SimId),
