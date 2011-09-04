@@ -214,9 +214,11 @@ handle_call({action, step_in}, _From, State) ->
     Counter = State#rod_position_state.control_position_counter - 1,
     if
         Counter < 0 ->
+	    error_logger:info_report(["Control rods step in failed", {reason, "rods fully inserted"}]),
 	    {reply, full_in, State};
 	true ->
 	    Control_group_position = counter_to_position(Counter, State),
+	    error_logger:info_report(["Control rods step in one step"]),
 	    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}}
     end;
 
@@ -225,9 +227,11 @@ handle_call({action, step_out}, _From, State) ->
     Max_position = lists:last(State#rod_position_state.control_rod_stops),
     if
         Counter > Max_position ->
+	    error_logger:info_report(["Control rods step out failed", {reason, "rods fully withdrawn"}]),
 	    {reply, full_out, State};
 	true ->
 	    Control_group_position = counter_to_position(Counter, State),
+	    error_logger:info_report(["Control rods step out one step"]),
 	    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}}
     end;
 
@@ -238,9 +242,10 @@ handle_call({get, integral_worth, [Burnup, _Flux]}, _From, State) ->
     {reply, Worth, State};
 
 handle_call(stop, _From, Tab) ->
-    {stop, normal, stopped, Tab}.
+    {stop, normal, stopped, Tab};
 
 handle_call({set, control_position_counter, Counter}, _From, State) ->
+    error_logger:info_report(["Setting control position counter."]),
     Control_group_position = counter_to_position(Counter, State),
     {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}};
 
@@ -265,7 +270,7 @@ handle_call({set, shutdown_position_counter, Counter}, _From, State) ->
     {reply, ok, State#rod_position_state{shutdown_position_counter = Counter_1, shutdown_group_position = Shutdown_group_position}}.
 
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
-%handle_cast(_Msg, State) -> {noreply, State}.
+handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
