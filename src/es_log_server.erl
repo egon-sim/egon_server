@@ -100,7 +100,7 @@ cycle_len(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_cycle_len(SimId, Val) ->
-    gen_server:call(?SERVER(SimId), {set, cycle_len, Val}).
+    gen_server:cast(?SERVER(SimId), {set, cycle_len, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Get list of parameters which logger logs.
@@ -134,7 +134,7 @@ add_parameters(SimId, [Head|Rest]) ->
 %% @end
 %%-------------------------------------------------------------------
 add_parameter(SimId, Parameter) ->
-    gen_server:call(?SERVER(SimId), {action, add_parameter, Parameter}).
+    gen_server:cast(?SERVER(SimId), {action, add_parameter, Parameter}).
 
 %%-------------------------------------------------------------------
 %% @doc Clear list of parameters which logger logs.
@@ -143,7 +143,7 @@ add_parameter(SimId, Parameter) ->
 %% @end
 %%-------------------------------------------------------------------
 clear_parameters(SimId) ->
-    gen_server:call(?SERVER(SimId), {set, parameters, []}).
+    gen_server:cast(?SERVER(SimId), {set, parameters, []}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns information whether logger server is running or stopped
@@ -195,7 +195,7 @@ start_logging(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 stop_logging(SimId) ->
-    gen_server:call(?SERVER(SimId), {action, stop}).
+    gen_server:cast(?SERVER(SimId), {action, stop}).
 
 
 %%%===================================================================
@@ -208,36 +208,8 @@ init([SimId]) ->
 handle_call({get, cycle_len}, _From, State) ->
     {reply, State#log_state.cycle_len, State};
 
-handle_call({set, cycle_len, Val}, _From, State) when State#log_state.status =:= stopped ->
-    {reply, ok, State#log_state{cycle_len=Val}};
-
-handle_call({set, cycle_len, Val}, _From, State) when State#log_state.status =:= running ->
-    error_logger:info_report(["Setting log server cycle_len", {cycle_len, Val}]),
-    SimId = State#log_state.simid,
-    Old_timer = State#log_state.timer,
-
-    timer:cancel(Old_timer),
-    {ok, New_timer} = timer:apply_interval(Val, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
-    timer:start(),
-
-    {reply, ok, State#log_state{timer=New_timer, cycle_len=Val}};
-
 handle_call({get, parameters}, _From, State) ->
     {reply, State#log_state.parameters, State};
-
-handle_call({set, parameters, []}, _From, State) ->
-    error_logger:info_report(["Clearing parameters from log server"]),
-    {reply, ok, State#log_state{parameters=[]}};
-    
-handle_call({set, parameters, Val}, _From, State) ->
-    error_logger:info_report(["Setting parameters to log server", {parameters, Val}]),
-    {reply, ok, State#log_state{parameters=Val}};
-
-handle_call({action, add_parameter, {Name, {Module, Function, Arguments}}}, _From, State) ->
-    New_param = #log_parameter{name = Name, mfa = {Module, Function, Arguments}},
-    error_logger:info_report(["Adding parameter to log server", {parameter, New_param}]),
-    Parameters = State#log_state.parameters,
-    {reply, ok, State#log_state{parameters=[New_param|Parameters]}};
 
 handle_call({get, status}, _From, State) ->
     {reply, State#log_state.status, State};
@@ -266,11 +238,6 @@ handle_call({action, start}, _From, State) ->
     timer:start(),
     {reply, ok, State#log_state{timer=Timer, status=running}};
 
-handle_call({action, stop}, _From, State) ->
-    error_logger:info_report(["Stopping log server"]),
-    timer:cancel(State#log_state.timer),
-    {reply, ok, State#log_state{timer=none, status=stopped}};
-
 handle_call({tick}, _From, State) when State#log_state.status =:= running ->
     New_state = log_parameters(State),
     {reply, ok, New_state};
@@ -287,8 +254,41 @@ handle_call(stop, _From, State) ->
     timer:cancel(State#log_state.timer),
     {stop, normal, stopped, State#log_state{timer=none, status=stopped}}.
 
+handle_cast({set, cycle_len, Val}, State) when State#log_state.status =:= stopped ->
+    {noreply, State#log_state{cycle_len=Val}};
+
+handle_cast({set, cycle_len, Val}, State) when State#log_state.status =:= running ->
+    error_logger:info_report(["Setting log server cycle_len", {cycle_len, Val}]),
+    SimId = State#log_state.simid,
+    Old_timer = State#log_state.timer,
+
+    timer:cancel(Old_timer),
+    {ok, New_timer} = timer:apply_interval(Val, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
+    timer:start(),
+
+    {noreply, State#log_state{timer=New_timer, cycle_len=Val}};
+
+handle_cast({set, parameters, []}, State) ->
+    error_logger:info_report(["Clearing parameters from log server"]),
+    {noreply, State#log_state{parameters=[]}};
+    
+handle_cast({set, parameters, Val}, State) ->
+    error_logger:info_report(["Setting parameters to log server", {parameters, Val}]),
+    {noreply, State#log_state{parameters=Val}};
+
+handle_cast({action, add_parameter, {Name, {Module, Function, Arguments}}}, State) ->
+    New_param = #log_parameter{name = Name, mfa = {Module, Function, Arguments}},
+    error_logger:info_report(["Adding parameter to log server", {parameter, New_param}]),
+    Parameters = State#log_state.parameters,
+    {noreply, State#log_state{parameters=[New_param|Parameters]}};
+
+handle_cast({action, stop}, State) ->
+    error_logger:info_report(["Stopping log server"]),
+    timer:cancel(State#log_state.timer),
+    {noreply, State#log_state{timer=none, status=stopped}}.
+
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
-handle_cast(_Msg, State) -> {noreply, State}.
+%handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
@@ -373,7 +373,9 @@ unit_test() ->
     {ok, _} = es_log_server:start_link(SimId),
 
     {error, {not_set, cycle_len}} = start_logging(SimId),
+    io:format("1~n"),
     ok = set_cycle_len(SimId, 1000),
+    io:format("2~n"),
     1000 = cycle_len(SimId),
 
     {error, {not_set, parameters}} = start_logging(SimId),
