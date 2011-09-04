@@ -1,12 +1,207 @@
+%%%-------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server which implements an EGON client. Knows how to
+%%%      communicate with egon_server and preform some basic
+%%%      interactions. Is used to test egon_server from the outside,
+%%%      using it's TCP/IP interface.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(egon_client).
--include_lib("include/es_common.hrl").
+
 -import(re).
 -behaviour(gen_server).
--export([start_link/3, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(client_state, {host, port, sock, username}).
--compile(export_all).
+-define(SERVER, {local, ?MODULE}).
 
-start_link(Host, Port, Username) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Host, Port, Username], []).
+% API
+-export([
+	start_link/3,
+	stop_link/0,
+	new_sim/2,
+	conn_to_sim/1,
+	call/1,
+	send/1,
+	sim_info/0,
+	sim_info/1,
+	sim_clients/0,
+	sim_clients/1,
+	list_sims/0
+]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% tests
+-export([client_test/0]).
+
+% data structures
+-record(client_state, {
+		      host, % server hostname
+		      port, % server port
+		      sock, % listener socket
+		      username % client username
+}).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(Host, Port, Username) ->
+    gen_server:start_link(?SERVER, ?MODULE, [Host, Port, Username], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link() ->
+    gen_server:call(?SERVER, stop).
+
+%%-------------------------------------------------------------------
+%% @doc Starts new simulator.
+%%
+%% @spec new_sim(Name::string(), Desc::string()) -> {connected,
+%%       Port} | {error_starting_child} | {unknown_error, Error}
+%% where
+%%  Port = integer(),
+%%  Error = term()
+%% @end
+%%-------------------------------------------------------------------
+new_sim(Name, Desc) ->
+    Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
+    case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
+        {connected, Port} ->
+	    gen_server:call(?MODULE, {switch_port, Port});
+	{error_starting_child} ->
+	    io:format("Starting new simulator failed.~n"),
+	    {error, shutdown};
+	{unknown_error, Error} ->
+	    {unknown_error, Error};
+	Other ->
+	    Other
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc Connects to a simulator.
+%%
+%% @spec conn_to_sim(SimId::integer()) -> {connected,
+%%       Port} | {error, no_such_sim} | {unknown_error, Error}
+%% where
+%%  Port = integer(),
+%%  Error = term()
+%% @end
+%%-------------------------------------------------------------------
+conn_to_sim(Id) ->
+    Params = "[" ++ integer_to_list(Id) ++ ", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
+    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}"),
+    io:format("Retv: ~p.~n", [Retv]),
+    case parse(Retv) of
+        {connected, Port} ->
+	    io:format("Simulator with id ~p is listening on port ~p.", [Id, Port]),
+	    gen_server:call(?MODULE, {switch_port, Port});
+	{error, no_such_sim} ->
+	    io:format("There is no simulator with id " ++ integer_to_list(Id) ++ ".~n"),
+	    {error, no_such_sim};
+	{unknown_error, Error} ->
+	    io:format("Unknown error: ~p.~n", [Error]),
+	    {unknown_error, Error};
+	Other ->
+	    io:format("Unknown error: ~p.~n", [Other]),
+	    Other
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc Alias of send(Message).
+%%
+%% @spec call(Message::string()) -> Result
+%% where
+%%  Result = term()
+%% @end
+%%-------------------------------------------------------------------
+call(Message) ->
+    send(Message).
+
+%%-------------------------------------------------------------------
+%% @doc Sends an arbitrary message to egon_server.
+%%
+%% @spec send(Message::string()) -> Result
+%% where
+%%  Result = term()
+%% @end
+%%-------------------------------------------------------------------
+send(Message) ->
+    gen_server:call(?MODULE, {send, Message}).
+
+%%-------------------------------------------------------------------
+%% @doc Return simulator_manifest for simulator to which egon_client
+%%      is currently connected.
+%%
+%% @spec sim_info() -> Result
+%% where
+%%  Result = string()
+%% @end
+%%-------------------------------------------------------------------
+sim_info() ->
+    send("{ask, sim_info}").
+
+%%-------------------------------------------------------------------
+%% @doc Return simulator_manifest for all simulator with id SimId.
+%%
+%% @spec sim_info(SimId:integer()) -> Result
+%% where
+%%  Result = string()
+%% @end
+%%-------------------------------------------------------------------
+sim_info(Id) ->
+    send("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
+
+%%-------------------------------------------------------------------
+%% @doc Return list of clients connected to simulator to which
+%%      egon_client is currently connected.
+%%
+%% @spec sim_clients() -> Result
+%% where
+%%  Result = string()
+%% @end
+%%-------------------------------------------------------------------
+sim_clients() ->
+    send("{ask, sim_clients}").
+
+%%-------------------------------------------------------------------
+%% @doc Return list of clients connected to simulator with id SimId.
+%%
+%% @spec sim_clients(SimId::integer()) -> Result
+%% where
+%%  Result = string()
+%% @end
+%%-------------------------------------------------------------------
+sim_clients(Id) ->
+    send("{ask, sim_clients, " ++ integer_to_list(Id) ++ "}").
+
+%%-------------------------------------------------------------------
+%% @doc Return list of simulators running on server to which
+%%      egon_client is currently connected.
+%%
+%% @spec list_sims() -> Result
+%% where
+%%  Result = string()
+%% @end
+%%-------------------------------------------------------------------
+list_sims() ->
+    send("{ask, list_sims}").
+
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
 
 init([Host, PortNo, Username]) -> 
     {ok,Sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
@@ -42,72 +237,9 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-start() ->
-    start("unknown").
-
-start(Username) ->
-    start_link("localhost", 1055, Username).
-
-new_sim(Name, Desc) ->
-    Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
-    case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
-        {connected, Port} ->
-	    gen_server:call(?MODULE, {switch_port, Port});
-	{error_starting_child} ->
-	    io:format("Starting new simulator failed.~n"),
-	    {error, shutdown};
-	{unknown_error, Error} ->
-	    {unknown_error, Error};
-	Other ->
-	    Other
-    end.
-
-conn_to_sim(Id) ->
-    Params = "[" ++ integer_to_list(Id) ++ ", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
-    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}"),
-    io:format("Retv: ~p.~n", [Retv]),
-    case parse(Retv) of
-        {connected, Port} ->
-	    io:format("Simulator with id ~p is listening on port ~p.", [Id, Port]),
-	    gen_server:call(?MODULE, {switch_port, Port});
-	{error, no_such_sim} ->
-	    io:format("There is no simulator with id " ++ integer_to_list(Id) ++ ".~n"),
-	    {error, no_such_sim};
-	{unknown_error, Error} ->
-	    io:format("Unknown error: ~p.~n", [Error]),
-	    {unknown_error, Error};
-	Other ->
-	    io:format("Unknown error: ~p.~n", [Other]),
-	    Other
-    end.
-
-call(Message) ->
-    send(Message).
-
-send(Message) ->
-    gen_server:call(?MODULE, {send, Message}).
-
-sim_info() ->
-    send("{ask, sim_info}").
-
-sim_info(Id) ->
-    send("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
-
-sim_clients() ->
-    send("{ask, sim_clients}").
-
-sim_clients(Id) ->
-    send("{ask, sim_clients, " ++ integer_to_list(Id) ++ "}").
-
-list_sims() ->
-    send("{ask, list_sims}").
-
-stop() ->
-    gen_server:call(?MODULE, stop).
-
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 parse(Buffer) ->
     {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
@@ -117,9 +249,15 @@ parse(Buffer) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
     Args.
 
+    
+%%%===================================================================
+%%% Test functions
+%%%===================================================================
+-include_lib("include/es_common.hrl").
+
 client_test() ->
     ok = egon_server:start(),
-    {ok,_} = egon_client:start("Test user"),
+    {ok,_} = egon_client:start_link("locahost", 1055, "Test user"),
     ok = egon_client:new_sim("Test sim", "Simulator for purposes of unit testing"),
     "305.0" = egon_client:call("{get, es_core_server, tavg}"),
     "ok" = egon_client:call("{action, es_rod_position_server, step_in}"),
