@@ -316,9 +316,9 @@ position_to_counter([Letter|Number], Control_rod_stops, Last_overlap, Overlap, C
 unit_test() ->
     SimId = 1,
     {ok, _} = es_curvebook_server:start_link(SimId),
-    {ok, _} = es_rod_position_server:start_link(SimId),
-    ok = es_rod_position_server:set_control_position_counter(SimId, 612),
-    ok = es_rod_position_server:set_shutdown_position_counter(SimId, 228),
+    {ok, _} = start_link(SimId),
+    ok = set_control_position_counter(SimId, 612),
+    ok = set_shutdown_position_counter(SimId, 228),
 
     612 = control_position_counter(SimId),
     full_out = step_out(SimId),
@@ -327,8 +327,16 @@ unit_test() ->
     [228, 228, 228, 227] = control_position(SimId),
     ok = step_out(SimId),
     [228, 228, 228, 228] = control_position(SimId),
+
+    ok = set_control_position_counter(SimId, 0),
+    full_in = step_in(SimId),
+    [0, 0, 0, 0] = control_position(SimId),
+    ok = step_out(SimId),
+    1 = control_position_counter(SimId),
+
     228 = shutdown_position_counter(SimId),
     [228, 228] = shutdown_position(SimId),
+
     ok = set_control_position(SimId, "A50"),
     [50, 0, 0, 0] = control_position(SimId),
     ok = set_control_position(SimId, "B50"),
@@ -338,7 +346,7 @@ unit_test() ->
     ok = set_control_position(SimId, "D50"),
     [228, 228, 178, 50] = control_position(SimId),
 
-    stopped = es_rod_position_server:stop_link(SimId),
+    stopped = stop_link(SimId),
     stopped = es_curvebook_server:stop_link(SimId),
     ok.
 
