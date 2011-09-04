@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Server representing a model of contrl and shutdown rods
+%%% @doc Server representing a model of control and shutdown rods
 %%%      positioning system.
 %%% @end
 %%%-------------------------------------------------------------------
@@ -87,7 +87,7 @@ control_position_counter(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_control_position_counter(SimId, Val) ->
-    gen_server:call(?SERVER(SimId), {set, control_position_counter, Val}).
+    gen_server:cast(?SERVER(SimId), {set, control_position_counter, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of control rod group positions as an array.
@@ -105,7 +105,7 @@ control_position(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_control_position(SimId, Val) ->
-    gen_server:call(?SERVER(SimId), {set, control_position, Val}).
+    gen_server:cast(?SERVER(SimId), {set, control_position, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of control rod group position.
@@ -132,7 +132,7 @@ shutdown_position_counter(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_shutdown_position_counter(SimId, Val) ->
-    gen_server:call(?SERVER(SimId), {set, shutdown_position_counter, Val}).
+    gen_server:cast(?SERVER(SimId), {set, shutdown_position_counter, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of shutdown rod group positions as an array.
@@ -195,35 +195,15 @@ init([SimId]) ->
 
 handle_call({get, control_position_counter}, _From, State) ->
     {reply, State#rod_position_state.control_position_counter, State};
-handle_call({set, control_position_counter, Counter}, _From, State) ->
-    Control_group_position = counter_to_position(Counter, State),
-    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}};
 
 handle_call({get, control_position}, _From, State) ->
     {reply, State#rod_position_state.control_group_position, State};
-handle_call({set, control_position, Val}, _From, State) ->
-    NewCounter = position_to_counter(Val, State),
-    Control_group_position = counter_to_position(NewCounter, State),
-    {reply, ok, State#rod_position_state{control_position_counter = NewCounter, control_group_position = Control_group_position}};
+
 handle_call({get, control_position, Group}, _From, State) ->
     {reply, lists:nth(Group, State#rod_position_state.control_group_position), State};
 
 handle_call({get, shutdown_position_counter}, _From, State) ->
     {reply, State#rod_position_state.shutdown_position_counter, State};
-handle_call({set, shutdown_position_counter, Counter}, _From, State) ->
-    No_of_groups = State#rod_position_state.no_of_shutdown_groups,
-    Rod_length = State#rod_position_state.shutdown_rod_length,
-    if
-        Counter > Rod_length ->
-	    Counter_1 = Rod_length;
-        Counter < 0 ->
-	    Counter_1 = 0;
-	true ->
-	    Counter_1 = Counter
-    end,
-
-    Shutdown_group_position = lists:duplicate(No_of_groups, Counter_1),
-    {reply, ok, State#rod_position_state{shutdown_position_counter = Counter_1, shutdown_group_position = Shutdown_group_position}};
 
 handle_call({get, shutdown_position}, _From, State) ->
     {reply, State#rod_position_state.shutdown_group_position, State};
@@ -234,7 +214,7 @@ handle_call({action, step_in}, _From, State) ->
     Counter = State#rod_position_state.control_position_counter - 1,
     if
         Counter < 0 ->
-	    {reply, ok, State};
+	    {reply, full_in, State};
 	true ->
 	    Control_group_position = counter_to_position(Counter, State),
 	    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}}
@@ -245,7 +225,7 @@ handle_call({action, step_out}, _From, State) ->
     Max_position = lists:last(State#rod_position_state.control_rod_stops),
     if
         Counter > Max_position ->
-	    {reply, ok, State};
+	    {reply, full_out, State};
 	true ->
 	    Control_group_position = counter_to_position(Counter, State),
 	    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}}
@@ -260,8 +240,32 @@ handle_call({get, integral_worth, [Burnup, _Flux]}, _From, State) ->
 handle_call(stop, _From, Tab) ->
     {stop, normal, stopped, Tab}.
 
+handle_call({set, control_position_counter, Counter}, _From, State) ->
+    Control_group_position = counter_to_position(Counter, State),
+    {reply, ok, State#rod_position_state{control_position_counter = Counter, control_group_position = Control_group_position}};
+
+handle_call({set, control_position, Val}, _From, State) ->
+    NewCounter = position_to_counter(Val, State),
+    Control_group_position = counter_to_position(NewCounter, State),
+    {reply, ok, State#rod_position_state{control_position_counter = NewCounter, control_group_position = Control_group_position}};
+
+handle_call({set, shutdown_position_counter, Counter}, _From, State) ->
+    No_of_groups = State#rod_position_state.no_of_shutdown_groups,
+    Rod_length = State#rod_position_state.shutdown_rod_length,
+    if
+        Counter > Rod_length ->
+	    Counter_1 = Rod_length;
+        Counter < 0 ->
+	    Counter_1 = 0;
+	true ->
+	    Counter_1 = Counter
+    end,
+
+    Shutdown_group_position = lists:duplicate(No_of_groups, Counter_1),
+    {reply, ok, State#rod_position_state{shutdown_position_counter = Counter_1, shutdown_group_position = Shutdown_group_position}}.
+
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
-handle_cast(_Msg, State) -> {noreply, State}.
+%handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
@@ -317,6 +321,11 @@ unit_test() ->
     ok = es_rod_position_server:set_shutdown_position_counter(SimId, 228),
 
     612 = control_position_counter(SimId),
+    full_out = step_out(SimId),
+    [228, 228, 228, 228] = control_position(SimId),
+    ok = step_in(SimId),
+    [228, 228, 228, 227] = control_position(SimId),
+    ok = step_out(SimId),
     [228, 228, 228, 228] = control_position(SimId),
     228 = shutdown_position_counter(SimId),
     [228, 228] = shutdown_position(SimId),
