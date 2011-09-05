@@ -11,7 +11,7 @@
 
 -import(re).
 -behaviour(gen_server).
--define(SERVER, {local, ?MODULE}).
+-define(SERVER, ?MODULE).
 
 % API
 -export([
@@ -19,6 +19,7 @@
 	stop_link/0,
 	new_sim/2,
 	conn_to_sim/1,
+	disconnect/0,
 	call/1,
 	send/1,
 	sim_info/0,
@@ -38,7 +39,8 @@
 -record(client_state, {
 		      host, % server hostname
 		      port, % server port
-		      sock, % listener socket
+		      server_sock, % socket connected to es_connection_server
+		      simulator_sock, % socket connected to particular server's es_interface_server
 		      username % client username
 }).
 
@@ -55,7 +57,7 @@
 %% @end
 %%-------------------------------------------------------------------
 start_link(Host, Port, Username) ->
-    gen_server:start_link(?SERVER, ?MODULE, [Host, Port, Username], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [Host, Port, Username], []).
 
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
@@ -80,7 +82,7 @@ new_sim(Name, Desc) ->
     Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
     case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
         {connected, Port} ->
-	    gen_server:call(?MODULE, {switch_port, Port});
+            {connected, Port};
 	{error_starting_child} ->
 	    io:format("Starting new simulator failed.~n"),
 	    {error, shutdown};
@@ -107,7 +109,7 @@ conn_to_sim(Id) ->
     case parse(Retv) of
         {connected, Port} ->
 	    io:format("Simulator with id ~p is listening on port ~p.", [Id, Port]),
-	    gen_server:call(?MODULE, {switch_port, Port});
+	    gen_server:call(?MODULE, {connect_to, Port});
 	{error, no_such_sim} ->
 	    io:format("There is no simulator with id " ++ integer_to_list(Id) ++ ".~n"),
 	    {error, no_such_sim};
@@ -118,6 +120,16 @@ conn_to_sim(Id) ->
 	    io:format("Unknown error: ~p.~n", [Other]),
 	    Other
     end.
+
+%%-------------------------------------------------------------------
+%% @doc Connects to a simulator.
+%%
+%% @spec disconnect(SimId::integer()) -> ok | not_connected
+%% @end
+%%-------------------------------------------------------------------
+disconnect() ->
+    gen_server:call(?MODULE, {disconnect}).
+    
 
 %%-------------------------------------------------------------------
 %% @doc Alias of send(Message).
@@ -205,29 +217,44 @@ list_sims() ->
 
 init([Host, PortNo, Username]) -> 
     {ok,Sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
-    {ok, #client_state{sock = Sock, host = Host, port = PortNo, username = Username}}.
+    {ok, #client_state{server_sock = Sock, simulator_sock = undefined, host = Host, port = PortNo, username = Username}}.
 
 handle_call({send, Message}, _From, State) -> 
-    Sock = State#client_state.sock,
+    if
+        State#client_state.simulator_sock =:= undefined ->
+	    Sock = State#client_state.server_sock;
+	true ->
+	    Sock = State#client_state.simulator_sock
+    end,
     gen_tcp:send(Sock,Message),
     {ok, A} = gen_tcp:recv(Sock, 0, 2000),
 %    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
 %    {match, [B]} = re:run(A, "^( .+)$", [{capture, [1], list}]),
     {reply, A, State};
 
-handle_call({switch_port, PortNo}, _From, State) -> 
-    Sock = State#client_state.sock,
-    gen_tcp:close(Sock),
+handle_call({connect_to, PortNo}, _From, State) -> 
     Host = State#client_state.host,
     {ok, New_sock} = gen_tcp:connect(Host,PortNo,[{active,false}, {packet,raw}]),
-    {reply, ok, State#client_state{sock = New_sock, port = PortNo}};
+    {reply, ok, State#client_state{simulator_sock = New_sock}};
+
+handle_call({disconnect}, _From, State) -> 
+    if
+        State#client_state.simulator_sock =:= undefined ->
+	    {reply, not_connected, State};
+	true ->
+	    Sock = State#client_state.simulator_sock,
+    	    gen_tcp:close(Sock),
+    	    {reply, ok, State#client_state{simulator_sock = undefined}}
+    end;
 
 handle_call({get, username}, _From, State) -> 
     {reply, State#client_state.username, State};
 
 handle_call(stop, _From, State) -> 
-    Sock = State#client_state.sock,
+    Sock = State#client_state.server_sock,
     gen_tcp:close(Sock),
+    Sock1 = State#client_state.simulator_sock,
+    gen_tcp:close(Sock1),
     {stop, normal, stopped, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
