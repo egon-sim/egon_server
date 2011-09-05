@@ -71,21 +71,21 @@ process_data(RawData, State, _Socket, Parent) ->
     New_state = process_data(RawData, State, _Socket),
     Parent ! {ok, self(), New_state}.
 
-process_data(RawData, State, _Socket) ->
+process_data(RawData, State, Socket) ->
 %    io:format("~p~n", [RawData]),
     Buffer = State#connection_state.buffer,
     {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
     if
         Newline =:= match ->
 	    New_state = State#connection_state{buffer = Buffer ++ CleanData},
-	    exec_call(New_state, _Socket, fun(Args) -> call(Args) end),
+	    exec_call(New_state, Socket),
 	    S1 = State#connection_state{buffer = []};
 	true ->
 	    S1 = State#connection_state{buffer = Buffer ++ RawData}
     end,
     S1.
 
-exec_call(State, Socket, Fun) ->
+exec_call(State, Socket) ->
     Buffer = State#connection_state.buffer,
 %    io:format("~p~n", [Buffer]),
     {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
@@ -94,28 +94,28 @@ exec_call(State, Socket, Fun) ->
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
-    Result = Fun(Args),
+    Result = call(State, Args),
     gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
 %    io:format("reply: ~p~n", [Result]),
     ok.
 
-call({ask, start_new_simulator, Params}) ->
+call(State, {ask, start_new_simulator, Params}) ->
     start_new_simulator(Params);
-call({ask, connect_to_simulator, Params}) ->
+call(State, {ask, connect_to_simulator, Params}) ->
     connect_to_simulator(Params);
-call({ask, stop_simulator, SimId}) ->
+call(State, {ask, stop_simulator, SimId}) ->
     stop_simulator(SimId);
-call({ask, sim_info}) ->
+call(State, {ask, sim_info}) ->
     sim_info();
-call({ask, sim_info, SimId}) ->
+call(State, {ask, sim_info, SimId}) ->
     sim_info(SimId);
-call({ask, sim_clients}) ->
+call(State, {ask, sim_clients}) ->
     sim_clients();
-call({ask, sim_clients, SimId}) ->
+call(State, {ask, sim_clients, SimId}) ->
     sim_clients(SimId);
-call({ask, list_sims}) ->
+call(State, {ask, list_sims}) ->
     list_sims();
-call(Req) ->
+call(State, Req) ->
     {unknown_request, Req}.
 
 
