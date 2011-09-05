@@ -284,11 +284,24 @@ parse(Buffer) ->
 
 client_test() ->
     ok = egon_server:start(),
-    {ok,_} = egon_client:start_link("locahost", 1055, "Test user"),
-    ok = egon_client:new_sim("Test sim", "Simulator for purposes of unit testing"),
-    "305.0" = egon_client:call("{get, es_core_server, tavg}"),
-    "ok" = egon_client:call("{action, es_rod_position_server, step_in}"),
-    "304.9416710346633" = egon_client:call("{get, es_core_server, tavg}"),
+    {ok,_} = start_link("locahost", 1055, "Test user"),
+    ok = new_sim("Test sim 1", "Simulator for purposes of unit testing"),
+    ok = new_sim("Test sim 2", "Simulator for purposes of unit testing"),
+    ok = new_sim("Test sim 3", "Simulator for purposes of unit testing"),
+
+    not_connected = disconnect(),
+
+    {connected, _} = conn_to_sim(1),
+    {error, already_connected} = conn_to_sim(2),
+    "305.0" = call("{get, es_core_server, tavg}"),
+    "ok" = call("{action, es_rod_position_server, step_in}"),
+    "304.9416710346633" = call("{get, es_core_server, tavg}"),
+    ok = disconnect(),
+
+    {connected, _} = conn_to_sim(2),
+    "305.0" = call("{get, es_core_server, tavg}"),
+    ok = disconnect(),
+
     egon_server:stop(),
-    egon_client:stop(),
+    stop(),
     ok.
