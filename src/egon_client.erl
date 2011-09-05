@@ -21,7 +21,6 @@
 	conn_to_sim/1,
 	disconnect/0,
 	call/1,
-	send/1,
 	sim_info/0,
 	sim_info/1,
 	sim_clients/0,
@@ -79,18 +78,7 @@ stop_link() ->
 %% @end
 %%-------------------------------------------------------------------
 new_sim(Name, Desc) ->
-    Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
-    case parse(send("{ask, start_new_simulator, " ++ Params ++ "}")) of
-        {connected, Port} ->
-            {connected, Port};
-	{error_starting_child} ->
-	    io:format("Starting new simulator failed.~n"),
-	    {error, shutdown};
-	{unknown_error, Error} ->
-	    {unknown_error, Error};
-	Other ->
-	    Other
-    end.
+    gen_server:call(?SERVER, {new_sim, Name, Desc}).
 
 %%-------------------------------------------------------------------
 %% @doc Connects to a simulator.
@@ -102,24 +90,8 @@ new_sim(Name, Desc) ->
 %%  Error = term()
 %% @end
 %%-------------------------------------------------------------------
-conn_to_sim(Id) ->
-    Params = "[" ++ integer_to_list(Id) ++ ", \"" ++ gen_server:call(?MODULE, {get, username}) ++ "\"]",
-    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}"),
-    io:format("Retv: ~p.~n", [Retv]),
-    case parse(Retv) of
-        {connected, Port} ->
-	    io:format("Simulator with id ~p is listening on port ~p.", [Id, Port]),
-	    gen_server:call(?MODULE, {connect_to, Port});
-	{error, no_such_sim} ->
-	    io:format("There is no simulator with id " ++ integer_to_list(Id) ++ ".~n"),
-	    {error, no_such_sim};
-	{unknown_error, Error} ->
-	    io:format("Unknown error: ~p.~n", [Error]),
-	    {unknown_error, Error};
-	Other ->
-	    io:format("Unknown error: ~p.~n", [Other]),
-	    Other
-    end.
+conn_to_sim(SimId) ->
+    gen_server:call(?SERVER, {connect_to_sim, SimId}).
 
 %%-------------------------------------------------------------------
 %% @doc Connects to a simulator.
@@ -129,10 +101,9 @@ conn_to_sim(Id) ->
 %%-------------------------------------------------------------------
 disconnect() ->
     gen_server:call(?MODULE, {disconnect}).
-    
 
 %%-------------------------------------------------------------------
-%% @doc Alias of send(Message).
+%% @doc Sends an arbitrary message to egon_server.
 %%
 %% @spec call(Message::string()) -> Result
 %% where
@@ -140,17 +111,6 @@ disconnect() ->
 %% @end
 %%-------------------------------------------------------------------
 call(Message) ->
-    send(Message).
-
-%%-------------------------------------------------------------------
-%% @doc Sends an arbitrary message to egon_server.
-%%
-%% @spec send(Message::string()) -> Result
-%% where
-%%  Result = term()
-%% @end
-%%-------------------------------------------------------------------
-send(Message) ->
     gen_server:call(?MODULE, {send, Message}).
 
 %%-------------------------------------------------------------------
@@ -163,7 +123,7 @@ send(Message) ->
 %% @end
 %%-------------------------------------------------------------------
 sim_info() ->
-    send("{ask, sim_info}").
+    call("{ask, sim_info}").
 
 %%-------------------------------------------------------------------
 %% @doc Return simulator_manifest for all simulator with id SimId.
@@ -174,7 +134,7 @@ sim_info() ->
 %% @end
 %%-------------------------------------------------------------------
 sim_info(Id) ->
-    send("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
+    call("{ask, sim_info, " ++ integer_to_list(Id) ++ "}").
 
 %%-------------------------------------------------------------------
 %% @doc Return list of clients connected to simulator to which
@@ -186,7 +146,7 @@ sim_info(Id) ->
 %% @end
 %%-------------------------------------------------------------------
 sim_clients() ->
-    send("{ask, sim_clients}").
+    call("{ask, sim_clients}").
 
 %%-------------------------------------------------------------------
 %% @doc Return list of clients connected to simulator with id SimId.
@@ -197,7 +157,7 @@ sim_clients() ->
 %% @end
 %%-------------------------------------------------------------------
 sim_clients(Id) ->
-    send("{ask, sim_clients, " ++ integer_to_list(Id) ++ "}").
+    call("{ask, sim_clients, " ++ integer_to_list(Id) ++ "}").
 
 %%-------------------------------------------------------------------
 %% @doc Return list of simulators running on server to which
@@ -209,7 +169,7 @@ sim_clients(Id) ->
 %% @end
 %%-------------------------------------------------------------------
 list_sims() ->
-    send("{ask, list_sims}").
+    call("{ask, list_sims}").
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -220,17 +180,50 @@ init([Host, PortNo, Username]) ->
     {ok, #client_state{server_sock = Sock, simulator_sock = undefined, host = Host, port = PortNo, username = Username}}.
 
 handle_call({send, Message}, _From, State) -> 
+    {reply, send(Message, State), State};
+
+handle_call({new_sim, Name, Desc}, _From, State) -> 
+    Username = State#client_state.username,
+    Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ Username ++ "\"]",
+    case parse(send("{ask, start_new_simulator, " ++ Params ++ "}", State)) of
+        {connected, _Port} ->
+            {reply, ok, State};
+	{error_starting_child} ->
+	    io:format("Starting new simulator failed.~n"),
+	    {reply, {error, shutdown}, State};
+	{unknown_error, Error} ->
+	    {reply, {unknown_error, Error}, State};
+	Other ->
+	    {reply, Other, State}
+    end;
+
+
+handle_call({connect_to_sim, SimId}, _From, State) -> 
     if
-        State#client_state.simulator_sock =:= undefined ->
-	    Sock = State#client_state.server_sock;
+        State#client_state.simulator_sock =/= undefined ->
+	    {reply, {error, already_connected}, State};
 	true ->
-	    Sock = State#client_state.simulator_sock
-    end,
-    gen_tcp:send(Sock,Message),
-    {ok, A} = gen_tcp:recv(Sock, 0, 2000),
-%    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
-%    {match, [B]} = re:run(A, "^( .+)$", [{capture, [1], list}]),
-    {reply, A, State};
+	    Username = State#client_state.username,
+	    Params = "[" ++ integer_to_list(SimId) ++ ", \"" ++ Username ++ "\"]",
+    	    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}", State),
+    	    io:format("Retv: ~p.~n", [Retv]),
+    	    case parse(Retv) of
+                {connected, Port} ->
+	    	    io:format("Simulator with id ~p is listening on port ~p.", [SimId, Port]),
+	    	    Host = State#client_state.host,
+            	    {ok, New_sock} = gen_tcp:connect(Host,Port,[{active,false}, {packet,raw}]),
+    	    	    {reply, ok, State#client_state{simulator_sock = New_sock}};
+		{error, no_such_sim} ->
+	    	    io:format("There is no simulator with id " ++ integer_to_list(SimId) ++ ".~n"),
+	    	    {reply, {error, no_such_sim}, State};
+		{unknown_error, Error} ->
+	    	    io:format("Unknown error: ~p.~n", [Error]),
+	    	    {reply, {unknown_error, Error}, State};
+		Other ->
+	    	    io:format("Unknown error: ~p.~n", [Other]),
+	    	    {reply, Other, State}
+	    end
+    end;
 
 handle_call({connect_to, PortNo}, _From, State) -> 
     Host = State#client_state.host,
@@ -254,7 +247,12 @@ handle_call(stop, _From, State) ->
     Sock = State#client_state.server_sock,
     gen_tcp:close(Sock),
     Sock1 = State#client_state.simulator_sock,
-    gen_tcp:close(Sock1),
+    if
+        Sock1 =/= undefined ->
+    	    gen_tcp:close(Sock1);
+	true ->
+	    ok
+    end,
     {stop, normal, stopped, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -276,6 +274,19 @@ parse(Buffer) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
     Args.
 
+send(Message, State) ->
+    if
+        State#client_state.simulator_sock =:= undefined ->
+	    Sock = State#client_state.server_sock;
+	true ->
+	    Sock = State#client_state.simulator_sock
+    end,
+    gen_tcp:send(Sock,Message),
+    {ok, A} = gen_tcp:recv(Sock, 0, 2000),
+%    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
+%    {match, [B]} = re:run(A, "^( .+)$", [{capture, [1], list}]),
+    A.
+
     
 %%%===================================================================
 %%% Test functions
@@ -284,24 +295,24 @@ parse(Buffer) ->
 
 client_test() ->
     ok = egon_server:start(),
-    {ok,_} = start_link("locahost", 1055, "Test user"),
+    {ok,_} = start_link("localhost", 1055, "Test user"),
     ok = new_sim("Test sim 1", "Simulator for purposes of unit testing"),
     ok = new_sim("Test sim 2", "Simulator for purposes of unit testing"),
     ok = new_sim("Test sim 3", "Simulator for purposes of unit testing"),
 
     not_connected = disconnect(),
 
-    {connected, _} = conn_to_sim(1),
+    ok = conn_to_sim(1),
     {error, already_connected} = conn_to_sim(2),
     "305.0" = call("{get, es_core_server, tavg}"),
     "ok" = call("{action, es_rod_position_server, step_in}"),
     "304.9416710346633" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
 
-    {connected, _} = conn_to_sim(2),
+    ok = conn_to_sim(2),
     "305.0" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
 
     egon_server:stop(),
-    stop(),
+    stopped = stop_link(),
     ok.
