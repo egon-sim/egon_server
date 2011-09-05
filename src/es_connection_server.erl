@@ -78,14 +78,14 @@ process_data(RawData, State, _Socket) ->
     if
         Newline =:= match ->
 	    New_state = State#connection_state{buffer = Buffer ++ CleanData},
-	    exec_call(New_state, _Socket),
+	    exec_call(New_state, _Socket, fun(Args) -> call(Args) end),
 	    S1 = State#connection_state{buffer = []};
 	true ->
 	    S1 = State#connection_state{buffer = Buffer ++ RawData}
     end,
     S1.
 
-exec_call(State, Socket) ->
+exec_call(State, Socket, Fun) ->
     Buffer = State#connection_state.buffer,
 %    io:format("~p~n", [Buffer]),
     {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
@@ -93,30 +93,31 @@ exec_call(State, Socket) ->
     {ok, Tokens, _Line} = erl_scan:string("[" ++ Tuple ++ "]."),
 %    io:format("~p~n", [Tokens]),
     {ok, [Args]} = erl_parse:parse_term(Tokens),
-
-    Reply = case Args of
-        {ask, start_new_simulator, Params} ->
-	    start_new_simulator(Params);
-        {ask, connect_to_simulator, Params} ->
-            connect_to_simulator(Params);
-        {ask, stop_simulator, SimId} ->
-            stop_simulator(SimId);
-	{ask, sim_info} ->
-	    sim_info();
-	{ask, sim_info, SimId} ->
-	    sim_info(SimId);
-	{ask, sim_clients} ->
-	    sim_clients();
-	{ask, sim_clients, SimId} ->
-	    sim_clients(SimId);
-	{ask, list_sims} ->
-	    list_sims();
-	true ->
-	    unknown_request
-    end,
-%    io:format("reply: ~p~n", [Reply]),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Reply])),
+%    io:format("~p~n", [Args]),
+    Result = Fun(Args),
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
+%    io:format("reply: ~p~n", [Result]),
     ok.
+
+call({ask, start_new_simulator, Params}) ->
+    start_new_simulator(Params);
+call({ask, connect_to_simulator, Params}) ->
+    connect_to_simulator(Params);
+call({ask, stop_simulator, SimId}) ->
+    stop_simulator(SimId);
+call({ask, sim_info}) ->
+    sim_info();
+call({ask, sim_info, SimId}) ->
+    sim_info(SimId);
+call({ask, sim_clients}) ->
+    sim_clients();
+call({ask, sim_clients, SimId}) ->
+    sim_clients(SimId);
+call({ask, list_sims}) ->
+    list_sims();
+call(Req) ->
+    {unknown_request, Req}.
+
 
 
 start_new_simulator(Params) ->
