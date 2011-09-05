@@ -313,6 +313,10 @@ client_test() ->
     "305.0" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
 
+    ok = conn_to_sim(1),
+    "304.9416710346633" = call("{get, es_core_server, tavg}"),
+    ok = disconnect(),
+
     egon_server:stop(),
     stopped = stop_link(),
     ok.
