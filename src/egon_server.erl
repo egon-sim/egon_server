@@ -41,12 +41,13 @@ sim_loaded(SimId) ->
 
 general_test() ->
     ok = egon_server:start(),
-    {ok,_} = egon_client:start("Test user"),
+    {ok,_} = egon_client:start_link("localhost", 1055, "Test user"),
     ok = egon_client:new_sim("Test sim", "Simulator for purposes of unit testing"),
-    "305.0" = egon_client:send("{get, es_core_server, tavg}"),
-    "305.0" = egon_client:send("{get, es_w7300_server, tref}"),
-    "ok" = egon_client:send("{action, es_rod_position_server, step_in}"),
-    "304.9416710346633" = egon_client:send("{get, es_core_server, tavg}"),
-    egon_client:stop(),
+    ok = egon_client:conn_to_sim(1),
+    "305.0" = egon_client:call("{get, es_core_server, tavg}"),
+    "305.0" = egon_client:call("{get, es_w7300_server, tref}"),
+    "ok" = egon_client:call("{action, es_rod_position_server, step_in}"),
+    "304.9416710346633" = egon_client:call("{get, es_core_server, tavg}"),
+    egon_client:stop_link(),
     egon_server:stop(),
     ok.
