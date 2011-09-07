@@ -13,34 +13,17 @@ init([SimId, User]) ->
     {ok, #interface_state{simid = SimId, port = Port, user = User, lsock = LSock, buffer=[], client=none}}.
 
 handle_info({tcp, Socket, RawData}, State) ->
-%    io:format("~w ~n", [RawData]),
-%    io:format("server received a packet~n"),
-
-%    New_state = process_data(RawData, State, Socket),
      New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
-%    io:format("starting: socket closed.~n"),
     Port = State#interface_state.port,
     Old_sock = State#interface_state.lsock,
     gen_tcp:close(Old_sock),
-%    io:format("socket closed.~n"),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("socket listening.~n"),
     {ok, Sock} = gen_tcp:accept(LSock),
-%    io:format("socket restarted.~n"),
     {noreply, State#interface_state{lsock = LSock, client = Sock, buffer=[]}}.
-%    {noreply, State};
     
-%handle_info(timeout, #interface_state{lsock = LSock} = State) ->
-%    {ok, Port} = inet:port(LSock),
-%    SimId = State#interface_state.simid,
-%    gen_server:call(es_simulator_tracker_server, {update_port, SimId, Port}),
-%    {ok, _Sock} = gen_tcp:accept(LSock),
-%    io:format("accepted"),
-%    {noreply, State}.
-
 handle_call({get, port}, _From, #interface_state{lsock = LSock} = State) ->
     {ok, Port} = inet:port(LSock),
     {reply, Port, State};

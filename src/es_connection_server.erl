@@ -8,34 +8,23 @@ start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], [])
 
 init([Port]) -> 
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("server listening...~n"),
     {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
-%    io:format("~w ~n", [RawData]),
-%    io:format("server received a packet~n"),
-
-%    New_state = process_data(RawData, State, Socket),
      New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
-%    io:format("starting: socket closed.~n"),
     Port = State#connection_state.port,
     Old_sock = State#connection_state.lsock,
     gen_tcp:close(Old_sock),
-%    io:format("socket closed.~n"),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-%    io:format("socket listening.~n"),
     {ok, _Sock} = gen_tcp:accept(LSock),
     io:format("socket restarted.~n"),
     {noreply, State#connection_state{lsock = LSock, buffer=[]}};
-%    {noreply, State};
     
 handle_info(timeout, #connection_state{lsock = LSock} = State) ->
-%    io:format("accepting... "),
     {ok, _Sock} = gen_tcp:accept(LSock),
-%    io:format("accepted~n"),
     {noreply, State}.
 
 handle_cast(stop, State) -> {stop, normal, State}.
