@@ -2,7 +2,7 @@
 -include_lib("include/es_common.hrl").
 -include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
--export([call/2, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
+-export([call/2, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 start_link(SimId, User) -> gen_server:start_link(?MODULE, [SimId, User], []).
 
@@ -17,26 +17,7 @@ handle_info({tcp, Socket, RawData}, State) ->
 %    io:format("server received a packet~n"),
 
 %    New_state = process_data(RawData, State, Socket),
-
-    process_flag(trap_exit, true),
-    From = proc_lib:spawn_link(?MODULE, process_data, [RawData, State, Socket, self()]),
-%    io:format("spawned~n"),
-    receive
-        {ok, From, Reply} ->
-%	     io:format("received ok~n"),
-	     New_state = Reply,
-	     receive
-	         {'EXIT', From, normal} ->
-%		     io:format("received normal EXIT~n"),
-		     ok
-	     end;
-        {'EXIT', From, Reason} ->
-%	     io:format("received EXIT~n"),
-	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
-	     New_state = State#interface_state{buffer = []}
-    end,
-    process_flag(trap_exit, false),
-%    io:format("end packet parse~n"),
+     New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
@@ -81,25 +62,6 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-process_data(RawData, State, Socket, Parent) ->
-    New_state = process_data(RawData, State, Socket),
-    Parent ! {ok, self(), New_state}.
-
-process_data(RawData, State, Socket) ->
-%    io:format("~p~n", [RawData]),
-    Buffer = State#interface_state.buffer,
-    {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
-    if
-        Newline =:= match ->
-	    Buffer1 = Buffer ++ CleanData,
-	    New_state = State#interface_state{buffer = Buffer1},
-	    es_lib_tcp:exec_call(New_state, Socket),
-	    Buffer2 = [];
-	true ->
-	    Buffer2 = Buffer ++ RawData
-    end,
-    State#interface_state{buffer = Buffer2}.
 
 call(#interface_state{simid = SimId}, {action, es_clock_server, start}) ->
     gen_server:call({global, {SimId, es_clock_server}}, {start_ticking});
