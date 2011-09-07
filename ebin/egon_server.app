@@ -15,6 +15,7 @@
       es_flux_buffer_server, 
       es_interface_dispatcher,
       es_interface_server,
+      es_lib_tcp,
       es_log_server, 
       es_makeup_buffer_server, 
       es_primary_sup,
