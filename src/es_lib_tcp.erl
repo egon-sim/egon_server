@@ -1,6 +1,8 @@
 -module(es_lib_tcp).
 
--export([parse_call/1]).
+-include_lib("include/es_tcp_states.hrl").
+
+-export([exec_call/2]).
 
 parse_call(Buffer) ->
 %    io:format("~p~n", [Buffer]),
@@ -11,5 +13,19 @@ parse_call(Buffer) ->
     {ok, [Args]} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
     Args.
+
+exec_call(#interface_state{buffer = Buffer} = State, Socket) ->
+    Args = parse_call(Buffer),
+    Result = es_interface_server:call(State, Args),
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
+%    io:format("Server sent: ~w~n", [Result]),
+    ok;
+
+exec_call(#connection_state{buffer = Buffer} = State, Socket) ->
+    Args = parse_call(Buffer),
+    Result = es_connection_server:call(State, Args),
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
+%    io:format("reply: ~p~n", [Result]),
+    ok.
 
 -include_lib("include/es_common.hrl").

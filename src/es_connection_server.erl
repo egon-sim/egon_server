@@ -1,8 +1,8 @@
 -module(es_connection_server).
 -include_lib("include/es_common.hrl").
+-include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4, sim_info/1, sim_clients/1, list_sims/0]).
--record(connection_state, {port, simulators, buffer, lsock}).
+-export([call/2, start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4, sim_info/1, sim_clients/1, list_sims/0]).
 
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
 
@@ -79,19 +79,12 @@ process_data(RawData, State, Socket) ->
         Newline =:= match ->
 	    Buffer1 = Buffer ++ CleanData,
 	    New_state = State#connection_state{buffer = Buffer1},
-	    exec_call(New_state, Socket),
+	    es_lib_tcp:exec_call(New_state, Socket),
 	    Buffer2 = [];
 	true ->
 	    Buffer2 = Buffer ++ RawData
     end,
     State#connection_state{buffer = Buffer2}.
-
-exec_call(#connection_state{buffer = Buffer} = State, Socket) ->
-    Args = es_lib_tcp:parse_call(Buffer),
-    Result = call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
-%    io:format("reply: ~p~n", [Result]),
-    ok.
 
 call(_State, {ask, start_new_simulator, Params}) ->
     start_new_simulator(Params);

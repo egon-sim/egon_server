@@ -1,0 +1,2 @@
+-record(connection_state, {port, simulators, buffer, lsock}).
+-record(interface_state, {simid, port, user, lsock, client, buffer, rsock}).

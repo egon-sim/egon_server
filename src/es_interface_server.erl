@@ -1,8 +1,8 @@
 -module(es_interface_server).
 -include_lib("include/es_common.hrl").
+-include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
--export([start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
--record(interface_state, {simid, port, user, lsock, client, buffer, rsock}).
+-export([call/2, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, process_data/4]).
 
 start_link(SimId, User) -> gen_server:start_link(?MODULE, [SimId, User], []).
 
@@ -94,19 +94,12 @@ process_data(RawData, State, Socket) ->
         Newline =:= match ->
 	    Buffer1 = Buffer ++ CleanData,
 	    New_state = State#interface_state{buffer = Buffer1},
-	    exec_call(New_state, Socket),
+	    es_lib_tcp:exec_call(New_state, Socket),
 	    Buffer2 = [];
 	true ->
 	    Buffer2 = Buffer ++ RawData
     end,
     State#interface_state{buffer = Buffer2}.
-
-exec_call(#interface_state{buffer = Buffer} = State, Socket) ->
-    Args = es_lib_tcp:parse_call(Buffer),
-    Result = call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
-%    io:format("Server sent: ~w~n", [Result]),
-    ok.
 
 call(#interface_state{simid = SimId}, {action, es_clock_server, start}) ->
     gen_server:call({global, {SimId, es_clock_server}}, {start_ticking});
