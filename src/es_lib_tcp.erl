@@ -2,6 +2,8 @@
 
 -include_lib("include/es_tcp_states.hrl").
 
+-define(PACKET_FORMAT, "^\\W*({.*})\\W*$").
+
 -export([parse_packet/3]).
 
 get_buffer(#interface_state{} = State) ->
@@ -31,7 +33,7 @@ parse_packet(Socket, RawData, State) ->
 
 parse_call(Buffer) ->
 %    io:format("~p~n", [Buffer]),
-    {match, [Tuple]} =  re:run(Buffer, "^\\W*({.*})\\W*$", [{capture, [1], list}]),
+    {match, [Tuple]} =  re:run(Buffer, ?PACKET_FORMAT, [{capture, [1], list}]),
 %    io:format("~p~n", [Tuple]),
     {ok, Tokens, _Line} = erl_scan:string("[" ++ Tuple ++ "]."),
 %    io:format("~p~n", [Tokens]),
