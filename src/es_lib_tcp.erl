@@ -4,29 +4,17 @@
 
 -export([parse_packet/3, process_data/4]).
 
-parse_packet(Socket, RawData, #interface_state{} = State) ->
-    process_flag(trap_exit, true),
-    From = proc_lib:spawn_link(?MODULE, process_data, [RawData, State, Socket, self()]),
-%    io:format("spawned~n"),
-    receive
-        {ok, From, Reply} ->
-%	     io:format("received ok~n"),
-	     New_state = Reply,
-	     receive
-	         {'EXIT', From, normal} ->
-%		     io:format("received normal EXIT~n"),
-		     ok
-	     end;
-        {'EXIT', From, Reason} ->
-%	     io:format("received EXIT~n"),
-	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
-	     New_state = State#interface_state{buffer = []}
-    end,
-    process_flag(trap_exit, false),
-%    io:format("end packet parse~n"),
-    New_state;
+get_buffer(#interface_state{} = State) ->
+    State#interface_state.buffer;
+get_buffer(#connection_state{} = State) ->
+    State#connection_state.buffer.
 
-parse_packet(Socket, RawData, #connection_state{} = State) ->
+set_buffer(#interface_state{} = State, Buffer) ->
+    State#interface_state{buffer = Buffer};
+set_buffer(#connection_state{} = State, Buffer) ->
+    State#connection_state{buffer = Buffer}.
+
+parse_packet(Socket, RawData, State) ->
     process_flag(trap_exit, true),
     From = proc_lib:spawn_link(?MODULE, process_data, [RawData, State, Socket, self()]),
 %    io:format("spawned~n"),
@@ -42,7 +30,7 @@ parse_packet(Socket, RawData, #connection_state{} = State) ->
         {'EXIT', From, Reason} ->
 %	     io:format("received EXIT~n"),
 	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
-	     New_state = State#connection_state{buffer = []}
+	     New_state = set_buffer(State, [])
     end,
     process_flag(trap_exit, false),
 %    io:format("end packet parse~n"),
@@ -52,33 +40,20 @@ process_data(RawData, State, Socket, Parent) ->
     New_state = process_data(RawData, State, Socket),
     Parent ! {ok, self(), New_state}.
 
-process_data(RawData, #connection_state{buffer = Buffer} = State, Socket) ->
+process_data(RawData, State, Socket) ->
 %    io:format("~p~n", [RawData]),
+    Buffer = get_buffer(State),
     {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
     if
         Newline =:= match ->
 	    Buffer1 = Buffer ++ CleanData,
-	    New_state = State#connection_state{buffer = Buffer1},
+	    New_state = set_buffer(State, Buffer1),
 	    exec_call(New_state, Socket),
 	    Buffer2 = [];
 	true ->
 	    Buffer2 = Buffer ++ RawData
     end,
-    State#connection_state{buffer = Buffer2};
-
-process_data(RawData, #interface_state{buffer = Buffer} = State, Socket) ->
-%    io:format("~p~n", [RawData]),
-    {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
-    if
-        Newline =:= match ->
-	    Buffer1 = Buffer ++ CleanData,
-	    New_state = State#interface_state{buffer = Buffer1},
-	    exec_call(New_state, Socket),
-	    Buffer2 = [];
-	true ->
-	    Buffer2 = Buffer ++ RawData
-    end,
-    State#interface_state{buffer = Buffer2}.
+    set_buffer(State, Buffer2).
 
 parse_call(Buffer) ->
 %    io:format("~p~n", [Buffer]),
