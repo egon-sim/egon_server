@@ -2,7 +2,7 @@
 
 -include_lib("include/es_tcp_states.hrl").
 
--export([parse_packet/3, process_data/4]).
+-export([parse_packet/3]).
 
 get_buffer(#interface_state{} = State) ->
     State#interface_state.buffer;
@@ -15,32 +15,6 @@ set_buffer(#connection_state{} = State, Buffer) ->
     State#connection_state{buffer = Buffer}.
 
 parse_packet(Socket, RawData, State) ->
-    process_flag(trap_exit, true),
-    From = proc_lib:spawn_link(?MODULE, process_data, [RawData, State, Socket, self()]),
-%    io:format("spawned~n"),
-    receive
-        {ok, From, Reply} ->
-%	     io:format("received ok~n"),
-	     New_state = Reply,
-	     receive
-	         {'EXIT', From, normal} ->
-%		     io:format("received normal EXIT~n"),
-		     ok
-	     end;
-        {'EXIT', From, Reason} ->
-%	     io:format("received EXIT~n"),
-	     gen_tcp:send(Socket, io_lib:fwrite("~p", [{error, Reason}])),
-	     New_state = set_buffer(State, [])
-    end,
-    process_flag(trap_exit, false),
-%    io:format("end packet parse~n"),
-    New_state.
-
-process_data(RawData, State, Socket, Parent) ->
-    New_state = process_data(RawData, State, Socket),
-    Parent ! {ok, self(), New_state}.
-
-process_data(RawData, State, Socket) ->
 %    io:format("~p~n", [RawData]),
     Buffer = get_buffer(State),
     {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
