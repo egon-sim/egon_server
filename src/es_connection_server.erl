@@ -11,7 +11,7 @@ init([Port]) ->
     {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
-     New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
+    New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->

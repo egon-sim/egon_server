@@ -370,7 +370,7 @@ csv_entry([Head|Rest], Acc) ->
 
 unit_test() ->
     SimId = 1,
-    {ok, _} = es_log_server:start_link(SimId),
+    {ok, _} = start_link(SimId),
 
     {error, {not_set, cycle_len}} = start_logging(SimId),
     ok = set_cycle_len(SimId, 1000),
