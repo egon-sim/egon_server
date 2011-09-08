@@ -8,11 +8,13 @@ FOR EACH MODULE:
 * remove export_all
 * replace handle_call with handle_cast where possible
 * add error_logger:info_report to important calls
+* replace all gen_server:calls referring to this module with API calls
 
 FOR PARTICULAR MODULE:
 * es_connection_server:list_sims implement with with handle_call
 * es_connection_server:sim_info implement with with handle_call
 * es_simulator_tracker_server:sim_clients implement with with handle_call
+* es_rod_position_server: replace "handle_call({set, " with "handle_cast({set, "
 
 BACKLOG (x = DONE):
 [ ] egon_client.erl

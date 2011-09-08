@@ -87,7 +87,7 @@ control_position_counter(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_control_position_counter(SimId, Val) ->
-    gen_server:cast(?SERVER(SimId), {set, control_position_counter, Val}).
+    gen_server:call(?SERVER(SimId), {set, control_position_counter, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of control rod group positions as an array.
@@ -105,10 +105,11 @@ control_position(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_control_position_str(SimId, Val) ->
-    gen_server:cast(?SERVER(SimId), {set, control_position_str, Val}).
+    gen_server:call(?SERVER(SimId), {set, control_position_str, Val}).
 
 %%-------------------------------------------------------------------
-%% @doc Returns value of control rod group position.
+%% @doc Returns value of control rod group position.Parameter Group
+%%      is index of rod group. Index of first group is 1 (not 0).
 %%
 %% @spec control_position(SimId::integer(), Group::integer()) -> integer()
 %% @end
@@ -132,7 +133,7 @@ shutdown_position_counter(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 set_shutdown_position_counter(SimId, Val) ->
-    gen_server:cast(?SERVER(SimId), {set, shutdown_position_counter, Val}).
+    gen_server:call(?SERVER(SimId), {set, shutdown_position_counter, Val}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns value of shutdown rod group positions as an array.
@@ -144,13 +145,14 @@ shutdown_position(SimId) ->
     gen_server:call(?SERVER(SimId), {get, shutdown_position}).
 
 %%-------------------------------------------------------------------
-%% @doc Returns value of shutdown rod group position.
+%% @doc Returns value of shutdown rod group position. Parameter Group
+%%      is index of rod group. Index of first group is 1 (not 0).
 %%
 %% @spec shutdown_position(SimId::integer(), Group::integer()) -> integer()
 %% @end
 %%-------------------------------------------------------------------
 shutdown_position(SimId, Group) ->
-    gen_server:call(?SERVER(SimId), {set, shutdown_position, Group}).
+    gen_server:call(?SERVER(SimId), {get, shutdown_position, Group}).
 
 %%-------------------------------------------------------------------
 %% @doc Moves control rods one step into reactor core.
@@ -345,18 +347,18 @@ unit_test() ->
     [178, 50, 0, 0] = control_position(SimId),
     ok = set_control_position_str(SimId, "C50"),
     [228, 178, 50, 0] = control_position(SimId),
-    228 = control_position(SimId, 0),
-    178 = control_position(SimId, 1),
-    50 = control_position(SimId, 2),
-    0 = control_position(SimId, 3),
+    228 = control_position(SimId, 1),
+    178 = control_position(SimId, 2),
+    50 = control_position(SimId, 3),
+    0 = control_position(SimId, 4),
 
     ok = set_control_position_str(SimId, "D50"),
     [228, 228, 178, 50] = control_position(SimId),
 
     228 = shutdown_position_counter(SimId),
     [228, 228] = shutdown_position(SimId),
-    228 = shutdown_position(SimId, 0),
     228 = shutdown_position(SimId, 1),
+    228 = shutdown_position(SimId, 2),
 
     stopped = stop_link(SimId),
     stopped = es_curvebook_server:stop_link(SimId),

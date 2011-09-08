@@ -85,7 +85,7 @@ pcms_from_full_power(State) ->
     Burnup = State#core_state.burnup,
     Flux = State#core_state.flux,
     SimId = State#core_state.simid,
-    Rod_worth = gen_server:call({global, {SimId, es_rod_position_server}}, {get, integral_worth, [Burnup, Flux]}),
+    Rod_worth = es_rod_position_server:integral_worth(SimId, Burnup, Flux),
     Power_defect_100 = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, 100]}),
     Power_defect = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, Flux]}),
 

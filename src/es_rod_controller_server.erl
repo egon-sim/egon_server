@@ -98,9 +98,9 @@ step(State, Speed) ->
     SimId = State#rod_controller_state.simid,
     if
         Speed < 0 ->
-    	    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_in});
+    	    es_rod_position_server:step_in(SimId);
         Speed > 0 ->
-    	    gen_server:call({global, {SimId, es_rod_position_server}}, {action, step_out});
+	    es_rod_position_server:step_out(SimId);
 	true ->
 	    speed_is_zero
     end.
