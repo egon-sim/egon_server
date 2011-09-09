@@ -7,8 +7,17 @@
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
 
 init([Port]) -> 
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-    {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0}.
+    Retval = gen_tcp:listen(Port, [{active, true}]),
+    case Retval of
+        {ok, LSock} ->
+    	    io:format("Connection server started normally.~n"),
+    	    error_handler:info_report("Connection server started normally.~n"),
+	    {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0};
+	{error, eaddrinuse} ->
+    	    io:format("Connection server unable to listen: port ~p is in use.~n", [Port]),
+    	    error_handler:error_report("Connection server unable to listen: port ~p is in use.~n", [Port]),
+	    {stop, eaddrinuse}
+    end.
 
 handle_info({tcp, Socket, RawData}, State) ->
     New_state = es_lib_tcp:parse_packet(Socket, RawData, State),
