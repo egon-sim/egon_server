@@ -13,7 +13,7 @@
 -define(SERVER, ?MODULE).
 -define(PACKET_FORMAT, "^\\W*({.*})\\W*$").
 
--record(lib_tcp_state, {port, lsock, client, buffer, rsock, results}).
+-record(lib_tcp_state, {port, lsock, csock, buffer}).
 
 % API
 -export([
@@ -53,12 +53,16 @@ parse_packet(Socket, RawData, State) ->
 get_buffer(#interface_state{} = State) ->
     State#interface_state.buffer;
 get_buffer(#connection_state{} = State) ->
-    State#connection_state.buffer.
+    State#connection_state.buffer;
+get_buffer(#lib_tcp_state{} = State) ->
+    State#lib_tcp_state.buffer.
 
 set_buffer(#interface_state{} = State, Buffer) ->
     State#interface_state{buffer = Buffer};
 set_buffer(#connection_state{} = State, Buffer) ->
-    State#connection_state{buffer = Buffer}.
+    State#connection_state{buffer = Buffer};
+set_buffer(#lib_tcp_state{} = State, Buffer) ->
+    State#lib_tcp_state{buffer = Buffer}.
 
 parse_call(Buffer) ->
 %    io:format("~p~n", [Buffer]),
@@ -88,41 +92,44 @@ exec_call(#lib_tcp_state{} = State, Socket, Args) ->
 %    io:format("reply: ~p~n", [Result]),
     ok.
 
-call(State, {M, F, A}) ->
-    Result = apply(M, F, A),
-    Results = State#lib_tcp_state.results,
-    New_state = State#lib_tcp_state{results = Results ++ Result},
-    {New_state, Result}.
+call(#lib_tcp_state{} = _State, {M, F, A}) ->
+    apply(M, F, A).
 
 %%%===================================================================
 %%% gen_server callbacks (used only for testing purposes)
 %%%===================================================================
 init([Port]) -> 
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-    {ok, #lib_tcp_state{port = Port, lsock = LSock, buffer=[], results = []}, 0}.
+    {ok, #lib_tcp_state{port = Port, lsock = LSock, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
     New_state = parse_packet(Socket, RawData, State),
     {noreply, New_state};
     
 handle_info({tcp_closed, _Socket}, State) ->
-    Port = State#connection_state.port,
-    Old_sock = State#connection_state.lsock,
+    Port = State#lib_tcp_state.port,
+    Old_sock = State#lib_tcp_state.lsock,
     gen_tcp:close(Old_sock),
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
-    {ok, _Sock} = gen_tcp:accept(LSock),
+    {ok, CSock} = gen_tcp:accept(LSock),
     io:format("socket restarted.~n"),
-    {noreply, State#connection_state{lsock = LSock, buffer=[]}};
+    {noreply, State#lib_tcp_state{lsock = LSock, csock = CSock, buffer=[]}};
     
-handle_info(timeout, #connection_state{lsock = LSock} = State) ->
-    {ok, _Sock} = gen_tcp:accept(LSock),
-    {noreply, State}.
+handle_info(timeout, #lib_tcp_state{lsock = LSock} = State) ->
+    {ok, CSock} = gen_tcp:accept(LSock),
+    {noreply, State#lib_tcp_state{csock = CSock}}.
 
-handle_cast(stop, State) -> {stop, normal, State}.
+handle_cast(stop, State) ->
+    io:format("Closing sockets... "),
+    LSock = State#lib_tcp_state.lsock,
+    CSock = State#lib_tcp_state.csock,
+    gen_tcp:close(LSock),
+    gen_tcp:close(CSock),
+    io:format("done.~n"),
+    {stop, normal, State}.
 
-handle_call({get, results}, _From, State) -> {reply, State#lib_tcp_state.results, State}.
 
-%handle_call(_Request, _From, State) -> {reply, ok, State}.
+handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
@@ -134,26 +141,23 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 -include_lib("include/es_common.hrl").
 
 start_link(Port) ->
-    gen_server:start_link(?SERVER, ?MODULE, [Port], []).
+    gen_server:start_link(?MODULE, [Port], []).
 
 stop_link() ->
-    gen_server:call(?SERVER, stop).
-
-results() ->
-    gen_server:call(?SERVER, {get, results}).
+    gen_server:cast(?SERVER, stop).
 
 unit_test() ->
     Port = 1055,
     {ok, _} = start_link(Port),
 
     {ok,Client_sock} = gen_tcp:connect(localhost,Port,[{active,false}, {packet,raw}]),
-    gen_tcp:send(Client_sock,{erlang, node, []}),
+    gen_tcp:send(Client_sock,"{erlang, node, []}"),
     {ok, "nonode@nohost"} = gen_tcp:recv(Client_sock, 0, 2000),
 
-    gen_tcp:send(Client_sock,{math, pow, [2, 3]}),
+    gen_tcp:send(Client_sock,"{math, pow, [2, 3]}"),
     {ok, "8.0"} = gen_tcp:recv(Client_sock, 0, 2000),
 
-    [nonode@nohost, 8.0] = results(),
+    gen_tcp:close(Client_sock),
     stop_link(),
     ok.
 
