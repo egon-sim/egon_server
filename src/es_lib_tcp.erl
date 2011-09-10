@@ -13,7 +13,7 @@
 -define(SERVER, ?MODULE).
 -define(PACKET_FORMAT, "^\\W*({.*})\\W*$").
 
--record(lib_tcp_state, {port, lsock, csock, buffer}).
+-record(lib_tcp_state, {port, lsock, buffer, csock}).
 
 % API
 -export([
@@ -24,31 +24,40 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 % tests
--export([unit_test/0, integration_test/0]).
+-export([
+	unit_test/0,
+	integration_test/0
+	]).
 
 %%%==================================================================
 %%% API
 %%%==================================================================
 
 parse_packet(Socket, RawData, State) ->
-%    io:format("~p~n", [RawData]),
+    {Call_ready, Call, New_state} = append_data(State, RawData),
+    if
+        Call_ready =:= true ->
+	    exec_call(New_state, Socket, Call),
+	    New_state;
+	true ->
+	    New_state
+    end.
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
+
+append_data(State, RawData) ->
     Buffer = get_buffer(State),
     {Newline, [CleanData]} = re:run(RawData, "^([^\\R]+)\\R*$", [{capture, [1], list}]),
     if
         Newline =:= match ->
 	    Buffer1 = Buffer ++ CleanData,
     	    Args = parse_call(Buffer1),
-	    New_state = set_buffer(State, Buffer1),
-	    exec_call(New_state, Socket, Args),
-	    Buffer2 = [];
+	    {true, Args, set_buffer(State, [])};
 	true ->
-	    Buffer2 = Buffer ++ RawData
-    end,
-    set_buffer(State, Buffer2).
-
-%%%==================================================================
-%%% Internal functions
-%%%==================================================================
+	    {false, none, set_buffer(State,  Buffer ++ RawData)}
+    end.
 
 get_buffer(#interface_state{} = State) ->
     State#interface_state.buffer;
@@ -91,6 +100,7 @@ exec_call(#lib_tcp_state{} = State, Socket, Args) ->
     gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
 %    io:format("reply: ~p~n", [Result]),
     ok.
+
 
 call(#lib_tcp_state{} = _State, {M, F, A}) ->
     apply(M, F, A).
@@ -146,6 +156,7 @@ start_link(Port) ->
 stop_link() ->
     gen_server:cast(?SERVER, stop).
 
+%unused() ->
 unit_test() ->
     Port = 1055,
     {ok, _} = start_link(Port),
