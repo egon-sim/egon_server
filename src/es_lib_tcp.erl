@@ -1,11 +1,11 @@
-%%%-------------------------------------------------------------------
+%%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Library for parsing IP/TCP requests. It is written as
 %%%      gen_server for purposes of unit testing only. It is not used
 %%%      as gen_server but as an library.
 %%% @end
-%%%-------------------------------------------------------------------
+%%%------------------------------------------------------------------
 -module(es_lib_tcp).
 
 -behaviour(gen_server).
@@ -26,9 +26,9 @@
 % tests
 -export([unit_test/0, integration_test/0]).
 
-%%%===================================================================
+%%%==================================================================
 %%% API
-%%%===================================================================
+%%%==================================================================
 
 parse_packet(Socket, RawData, State) ->
 %    io:format("~p~n", [RawData]),
@@ -46,9 +46,9 @@ parse_packet(Socket, RawData, State) ->
     end,
     set_buffer(State, Buffer2).
 
-%%%===================================================================
+%%%==================================================================
 %%% Internal functions
-%%%===================================================================
+%%%==================================================================
 
 get_buffer(#interface_state{} = State) ->
     State#interface_state.buffer;
@@ -95,9 +95,9 @@ exec_call(#lib_tcp_state{} = State, Socket, Args) ->
 call(#lib_tcp_state{} = _State, {M, F, A}) ->
     apply(M, F, A).
 
-%%%===================================================================
+%%%==================================================================
 %%% gen_server callbacks (used only for testing purposes)
-%%%===================================================================
+%%%==================================================================
 init([Port]) -> 
     {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
     {ok, #lib_tcp_state{port = Port, lsock = LSock, buffer=[]}, 0}.
@@ -135,9 +135,9 @@ handle_call(_Request, _From, State) -> {reply, ok, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-%%%===================================================================
+%%%==================================================================
 %%% Test functions
-%%%===================================================================
+%%%==================================================================
 -include_lib("include/es_common.hrl").
 
 start_link(Port) ->
