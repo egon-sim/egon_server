@@ -11,7 +11,6 @@ init([Port]) ->
     case Retval of
         {ok, LSock} ->
     	    io:format("Connection server started normally.~n"),
-    	    error_handler:info_report("Connection server started normally.~n"),
 	    {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0};
 	{error, eaddrinuse} ->
     	    io:format("Connection server unable to listen: port ~p is in use.~n", [Port]),
