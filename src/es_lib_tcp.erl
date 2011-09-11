@@ -34,10 +34,10 @@
 %%%==================================================================
 
 parse_packet(Socket, RawData, State) ->
-    {Call_ready, Call, New_state} = append_data(State, RawData),
+    {Calls_ready, Calls, New_state} = append_data(State, RawData),
     if
-        Call_ready =:= true ->
-	    exec_call(New_state, Socket, Call),
+        Calls_ready =:= true ->
+	    exec_calls(New_state, Socket, Calls),
 	    New_state;
 	true ->
 	    New_state
@@ -79,27 +79,31 @@ parse_call(Buffer) ->
 %    io:format("~p~n", [Tuple]),
     {ok, Tokens, _Line} = erl_scan:string("[" ++ Tuple ++ "]."),
 %    io:format("~p~n", [Tokens]),
-    {ok, [Args]} = erl_parse:parse_term(Tokens),
+    {ok, Args} = erl_parse:parse_term(Tokens),
 %    io:format("~p~n", [Args]),
     Args.
 
-exec_call(#interface_state{} = State, Socket, Args) ->
-    Result = es_interface_server:call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
-%    io:format("Server sent: ~w~n", [Result]),
-    ok;
+exec_calls(State, Socket, Args) ->
+    Results = lists:map(fun(A) -> exec_call(State, A) end, Args),
+    Len = length(Results),
+    if
+        Len > 1 ->
+	    Response = Results;
+	Len =:= 1 ->
+	    [Response] = Results;
+	true ->
+	    Response = {error, response_length_negative}
+    end,
+    gen_tcp:send(Socket, io_lib:fwrite("~p", [Response])).
 
-exec_call(#connection_state{} = State, Socket, Args) ->
-    Result = es_connection_server:call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
-%    io:format("reply: ~p~n", [Result]),
-    ok;
+exec_call(#interface_state{} = State, Args) ->
+    es_interface_server:call(State, Args);
 
-exec_call(#lib_tcp_state{} = State, Socket, Args) ->
-    Result = call(State, Args),
-    gen_tcp:send(Socket, io_lib:fwrite("~p", [Result])),
-%    io:format("reply: ~p~n", [Result]),
-    ok.
+exec_call(#connection_state{} = State, Args) ->
+    es_connection_server:call(State, Args);
+
+exec_call(#lib_tcp_state{} = State, Args) ->
+    call(State, Args).
 
 
 call(#lib_tcp_state{} = _State, {M, F, A}) ->
@@ -167,6 +171,9 @@ unit_test() ->
 
     gen_tcp:send(Client_sock,"{math, pow, [2, 3]}"),
     {ok, "8.0"} = gen_tcp:recv(Client_sock, 0, 2000),
+
+    gen_tcp:send(Client_sock,"{erlang, node, []},{math, pow, [2, 3]}"),
+    {ok, "[nonode@nohost,8.0]"} = gen_tcp:recv(Client_sock, 0, 2000),
 
     gen_tcp:close(Client_sock),
     stop_link(),
