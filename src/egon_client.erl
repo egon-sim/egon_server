@@ -305,6 +305,7 @@ client_test() ->
     ok = conn_to_sim(1),
     {error, already_connected} = conn_to_sim(2),
     "305.0" = call("{get, es_core_server, tavg}"),
+    "[100,1,612]" = call("[{get, es_turbine_server, power}, {get, es_turbine_server, rate}, {get, es_rod_position_server, control_position_counter}]"),
     "ok" = call("{action, es_rod_position_server, step_in}"),
     "304.9416710346633" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),

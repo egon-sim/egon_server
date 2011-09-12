@@ -160,20 +160,22 @@ start_link(Port) ->
 stop_link() ->
     gen_server:cast(?SERVER, stop).
 
+send(Client_sock, Call) ->
+    gen_tcp:send(Client_sock, Call),
+    gen_tcp:recv(Client_sock, 0, 2000).
+
 %unused() ->
 unit_test() ->
     Port = 1055,
     {ok, _} = start_link(Port),
 
     {ok,Client_sock} = gen_tcp:connect(localhost,Port,[{active,false}, {packet,raw}]),
-    gen_tcp:send(Client_sock,"{erlang, node, []}"),
-    {ok, "nonode@nohost"} = gen_tcp:recv(Client_sock, 0, 2000),
+    
+    {ok, "nonode@nohost"} = send(Client_sock,"{erlang, node, []}"),
 
-    gen_tcp:send(Client_sock,"{math, pow, [2, 3]}"),
-    {ok, "8.0"} = gen_tcp:recv(Client_sock, 0, 2000),
-
-    gen_tcp:send(Client_sock,"{erlang, node, []},{math, pow, [2, 3]}"),
-    {ok, "[nonode@nohost,8.0]"} = gen_tcp:recv(Client_sock, 0, 2000),
+    {ok, "8.0"} = send(Client_sock,"{math, pow, [2, 3]}"),
+    
+    {ok, "[nonode@nohost,8.0]"} = send(Client_sock,"{erlang, node, []},{math, pow, [2, 3]}"),
 
     gen_tcp:close(Client_sock),
     stop_link(),
@@ -181,4 +183,5 @@ unit_test() ->
 
 
 integration_test() ->
+% see egon_client:client_test/0
     ok.
