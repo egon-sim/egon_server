@@ -43,9 +43,9 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 set_up_defaults(State) ->
-    Snapshot = "full_power.snapshot",
     {ok, Priv} = application:get_env(egon_server, priv),
     {ok, Snapshots} = application:get_env(egon_server, snapshots),
+    {ok, Snapshot} = application:get_env(egon_server, default_snapshot),
     load_snapshot(State, Priv ++ Snapshots ++ Snapshot),
     ok.
 
