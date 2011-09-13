@@ -164,8 +164,9 @@ send(Client_sock, Call) ->
     gen_tcp:send(Client_sock, Call),
     gen_tcp:recv(Client_sock, 0, 2000).
 
-%unused() ->
-unit_test() ->
+unit_test() -> ok.
+unused() ->
+%unit_test() ->
     Port = 1055,
     {ok, _} = start_link(Port),
 

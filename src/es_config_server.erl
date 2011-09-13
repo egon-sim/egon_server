@@ -43,15 +43,25 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 set_up_defaults(State) ->
-    load_snapshot(State, "priv/snapshots/full_power.snapshot"),
+    Snapshot = "full_power.snapshot",
+    {ok, Priv} = application:get_env(egon_server, priv),
+    {ok, Snapshots} = application:get_env(egon_server, snapshots),
+    load_snapshot(State, Priv ++ Snapshots ++ Snapshot),
     ok.
 
 load_snapshot(#config_state{simid = SimId}, Path) ->
-   {ok, [Snapshot]} = file:consult(Path),
+    Is_file = filelib:is_regular(Path),
+    case Is_file of
+        true ->
+   	    {ok, [Snapshot]} = file:consult(Path),
 
-   lists:foreach(
-       fun({Server, Parm, Val}) ->
-       	   gen_server:call({global, {SimId, Server}}, {set, Parm, Val})
-       end,
-       Snapshot),
-   ok.
+   	    lists:foreach(
+       	        fun({Server, Parm, Val}) ->
+       	   	    gen_server:call({global, {SimId, Server}}, {set, Parm, Val})
+       		end,
+            Snapshot),
+	    ok;
+        false ->
+            io:format("Error: curvebook directory ~p does not exist.~n", [Path]),
+            {error, no_directory}
+    end.

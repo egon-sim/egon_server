@@ -50,15 +50,14 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fill_curvebook() ->
-    fill_curvebook("curvebook/").
+    {ok, Priv} = application:get_env(egon_server, priv),
+    {ok, Curvebook} = application:get_env(egon_server, curvebook),
+    fill_curvebook(Priv ++ Curvebook).
 
-fill_curvebook(Path) ->
-%    Dir = code:priv_dir(egon_server) ++ "curvebook/",
-    Dir = "priv/" ++ Path,
-%    io:format("~p~n", [Dir]),
+fill_curvebook(Dir) ->
     Is_dir = filelib:is_dir(Dir),
-    if
-        Is_dir ->
+    case Is_dir of
+        true ->
             Power_defect = fill_table(Dir ++ "power_defect.ets"),
     	    Boron_worth = fill_table(Dir ++ "boron_worth.ets"),
 	    MTC = fill_table(Dir ++ "MTC.ets"),
@@ -73,7 +72,7 @@ fill_curvebook(Path) ->
 	     	true ->
 	            {error, corrupt_curvebook}
 	    end;
-        true ->
+        false ->
             io:format("Error: curvebook directory ~p does not exist.~n", [Dir]),
             {error, no_directory}
     end.
@@ -91,8 +90,16 @@ fill_table(Path) ->
     end.
 
 fill_pls(Path) ->
-    {ok, [Table]} = file:consult(Path),
-    Table.
+    case file:consult(Path) of
+        {ok, [Table]} ->
+            Table;
+        {error, enoent} ->
+	    io:format("Error: PLS file ~p not found.~n", [Path]),
+            {error, enoent};
+        Other ->
+	    io:format("Error: ~p", [Other]),
+	    Other
+    end.
 
 sort_table(Table) when not is_list(Table) ->
     Table;

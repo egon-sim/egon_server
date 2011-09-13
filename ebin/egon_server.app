@@ -39,5 +39,5 @@
    , sasl
    ]},
    {mod, {es_app, []}},
-   {env, [{port, 1055}]}
+   {env, [{port, 1055}, {priv, "priv/"}, {curvebook, "curvebook/"}, {snapshots, "snapshots/"}]}
 ]}.
