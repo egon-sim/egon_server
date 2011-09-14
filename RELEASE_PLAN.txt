@@ -1,3 +1,4 @@
 *0 Make rod speed accurate for speeds greater than 1 step / sec (get current speed and time elapsed since last moving of rods, then just move rods and recalculate speed)
 *= write several unit test for es_turbine_server
 *0 If all simulators are stopped, then egon_server:new_sim cannot start a new one.
+*- rewrite tests with assert
