@@ -1,6 +1,7 @@
 -module(es_util).
 -import(eunit).
--compile(export_all).
+
+-export([run_tests/0, generate_compile/0 , unit_test/0]).
 
 run_tests() ->
     {_Passed, Failed, _PassedList, FailedList} = eunit:run(modules(), {suffix, "_test"}),
@@ -19,4 +20,9 @@ generate_compile() ->
     {ok, FD} = file:open("compile.bat", write),
     lists:foreach(fun(M) -> io:format(FD, "erlc -o ebin src\\~p.erl~n", [M]) end, modules()),
     file:close(FD),
+    ok.
+
+-include_lib("include/es_common.hrl").
+
+unit_test() ->
     ok.
