@@ -11,6 +11,7 @@ init([SimId]) ->
     {ok, #clock_state{simid = SimId, listeners=[], timer=none, cycle_len=none, cycle_no=0, status=stopped, log_ticks=false}}.
 
 handle_call({add_listener, Listener}, _From, State) ->
+    error_logger:info_report(["Adding listener.", {listener, Listener}]),
     Old_listeners = State#clock_state.listeners,
     New_listeners = lists:umerge(lists:sort(Old_listeners), [Listener]),
     New_state = State#clock_state{listeners=New_listeners},

@@ -18,6 +18,7 @@ egon_client:
 $- xls generation
 
 Separating implementation and configuration:
+*- move set_up_defaults from es_config_server to egon_server
 $+ move hardcoded setpoints from es_rod_controller_server:rod_speed to curvebook/pls
 
 Erlang/OTP problem:

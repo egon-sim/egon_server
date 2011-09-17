@@ -4,7 +4,8 @@
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(ramper_state, {simid, turbine, target, rate, direction}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+start_link(SimId) -> 
+    gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) ->
     {ok, #ramper_state{simid = SimId, turbine=es_turbine_server, target=none, rate=none, direction=none}}.
@@ -15,6 +16,7 @@ stop(SimId, Target, Rate) ->
     error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
 
 handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
+%    error_logger:info_report(["Start ramping."]),
     case Current > Target of
     	 true -> Direction = -1;
          false -> Direction = 1
@@ -25,6 +27,7 @@ handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
     {reply, ok, New_state};
 
 handle_call({tick}, _From, State) ->
+%    error_logger:info_report(["Ramper tick."]),
     SimId = State#ramper_state.simid,
     Current = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
     Target = State#ramper_state.target,

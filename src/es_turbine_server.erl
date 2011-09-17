@@ -102,11 +102,13 @@ handle_call({get, tref}, _From, State) ->
    {reply, Tref, State};
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= false ->
+    error_logger:info_report(["Starting turbine motion."]),
     SimId = State#turbine_state.simid,
     gen_server:call({global, {SimId, es_ramper_server}}, {start_ramp, State#turbine_state.power, State#turbine_state.target, State#turbine_state.rate}),
     {reply, ok, State#turbine_state{go=true}};
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= true ->
+    error_logger:info_report(["Starting turbine motion failed.", {reason, already_ramping}]),
     {reply, error_already_ramping, State};
 
 handle_call({action, ramp, stop}, _Caller, State) ->
