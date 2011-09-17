@@ -60,9 +60,16 @@ start_ramp(SimId) ->
     gen_server:call(?SERVER(SimId), {action, ramp, start}).
 
 start_ramp(SimId, Target, Rate) ->
-    set_target(SimId, Target),
-    set_rate(SimId, Rate),
-    start_ramp(SimId).
+    Go = go(SimId),
+    case Go of
+        false ->
+	    ok = set_target(SimId, Target),
+    	    ok = set_rate(SimId, Rate),
+    	    ok = start_ramp(SimId),
+	    ok;
+	true ->
+	    start_ramp(SimId) % returning error message
+    end.
 
 power(SimId) -> 
     gen_server:call(?SERVER(SimId), {get, power}).
@@ -95,28 +102,34 @@ handle_call({set, power, Power}, _From, State) ->
     New_state = State#turbine_state{power=Power},
     SimId = State#turbine_state.simid,
     gen_server:call({global, {SimId, es_core_server}}, {set, flux, Power}),
-    {reply, New_state#turbine_state.power, New_state};
+    {reply, ok, New_state};
 
 handle_call({get, go}, _From, State) ->
     {reply, State#turbine_state.go, State};
 
 handle_call({set, go, Go}, _From, State) ->
     New_state = State#turbine_state{go=Go},
-    {reply, New_state#turbine_state.go, New_state};
+    {reply, ok, New_state};
 
 handle_call({get, target}, _From, State) ->
     {reply, State#turbine_state.target, State};
 
-handle_call({set, target, Target}, _From, State) ->
+handle_call({set, target, Target}, _From, State) when State#turbine_state.go =:= false ->
     New_state = State#turbine_state{target=Target},
-    {reply, New_state#turbine_state.target, New_state};
+    {reply, ok, New_state};
+
+handle_call({set, target, _Target}, _From, State) when State#turbine_state.go =:= true ->
+    {reply, {error, cannot_change_target_while_ramping}, State};
 
 handle_call({get, rate}, _From, State) ->
     {reply, State#turbine_state.rate, State};
 
-handle_call({set, rate, Rate}, _From, State) ->
+handle_call({set, rate, Rate}, _From, State) when State#turbine_state.go =:= false ->
     New_state = State#turbine_state{rate=Rate},
-    {reply, New_state#turbine_state.rate, New_state};
+    {reply, ok, New_state};
+
+handle_call({set, rate, _Rate}, _From, State) when State#turbine_state.go =:= true ->
+    {reply, {error, cannot_change_rate_while_ramping}, State};
 
 handle_call({get, tref}, _From, State) -> 
    Power = State#turbine_state.power,
@@ -134,7 +147,7 @@ handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:=
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= true ->
     error_logger:info_report(["Starting turbine motion failed.", {reason, already_ramping}]),
-    {reply, error_already_ramping, State};
+    {reply, {error, already_ramping}, State};
 
 handle_call({action, ramp, stop}, _Caller, State) ->
     New_state = State#turbine_state{go=false},
@@ -169,26 +182,41 @@ integration_test() ->
 
     egon_server:run(SimId),
 
-    100 = power(SimId),
-    false = go(SimId),
-    80 = target(SimId),
-    1 = rate(SimId),
+    ?assertEqual(100, power(SimId)),
+    ?assertEqual(false, go(SimId)),
+    ?assertEqual(80, target(SimId)),
+    ?assertEqual(1, rate(SimId)),
 
-    start_ramp(SimId, 90, 2),
+    ?assertEqual(ok, start_ramp(SimId, 70, 5)),
         
-    90 = target(SimId),
-    2 = rate(SimId),
+    ?assertEqual(70, target(SimId)),
+    ?assertEqual(5, rate(SimId)),
 
-    timer:sleep(3500),
+    ?assertEqual({error, already_ramping}, start_ramp(SimId, 51, 5)),
+    timer:sleep(4000),
+    ?assertEqual({error, already_ramping}, start_ramp(SimId, 52, 5)),
 
-    true = go(SimId),
+    ?assertEqual(true, go(SimId)),
 
-    timer:sleep(3500),
+    timer:sleep(4000),
 
-    90 = power(SimId),
-    false = go(SimId),
-    90 = target(SimId),
-    2 = rate(SimId),
+    ?assertEqual(70, power(SimId)),
+    ?assertEqual(false, go(SimId)),
+    ?assertEqual(70, target(SimId)),
+    ?assertEqual(5, rate(SimId)),
 
+    ?assertEqual(ok, start_ramp(SimId, 85, 2)),
+    ?assertEqual(85, target(SimId)),
+    ?assertEqual(2, rate(SimId)),
+    ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
+    timer:sleep(4000),
+    ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
+    ?assertEqual(true, go(SimId)),
+    timer:sleep(4000),
+
+    ?assertEqual(85, power(SimId)),
+    ?assertEqual(false, go(SimId)),
+    ?assertEqual(85, target(SimId)),
+    ?assertEqual(2, rate(SimId)),
     egon_server:stop(),
     ok.
