@@ -28,7 +28,6 @@
       es_simulator_sup,
       es_simulator_tracker_server,
       es_sup,
-      es_turbine,
       es_turbine_server,
       es_util,
       es_utility_sup,
