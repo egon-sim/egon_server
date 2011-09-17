@@ -372,7 +372,7 @@ unit_test() ->
     SimId = 1,
     {ok, _} = start_link(SimId),
 
-    {error, {not_set, cycle_len}} = start_logging(SimId),
+    ?assertEqual({error, {not_set, cycle_len}}, start_logging(SimId)),
     ok = set_cycle_len(SimId, 1000),
     1000 = cycle_len(SimId),
 
