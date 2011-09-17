@@ -3,26 +3,31 @@
 -import(es_turbine_server).
 -compile(export_all).
 
+-define(SERVER(SimId), {global, {SimId, es_turbine_server}}).
+
 start(SimId) ->
     es_turbine_server:start_link(SimId).
 stop(SimId) ->
-    gen_server:call({global, {SimId, es_turbine_server}}, stop).
+    gen_server:call(?SERVER(SimId), stop).
 
 start_ramp(SimId) ->
-    gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, start}).
+    gen_server:call(?SERVER(SimId), {action, ramp, start}).
 
 start_ramp(SimId, Target, Rate) ->
     set(SimId, target, Target),
     set(SimId, rate, Rate),
     start_ramp(SimId).
 
-get(SimId, What) ->
-    gen_server:call({global, {SimId, es_turbine_server}}, {get, What}).
+power(SimId) -> 
+    gen_server:call(?SERVER(SimId), {get, power}).
 
-set(SimId, What, Val) ->
-    gen_server:call({global, {SimId, es_turbine_server}}, {set, What, Val}).
+go(SimId) -> 
+    gen_server:call(?SERVER(SimId), {get, go}).
 
-power() -> es_turbine:get(power).
-go() -> es_turbine:get(go).
-target() -> es_turbine:get(target).
-rate() -> es_turbine:get(rate).
+target(SimId) -> 
+    gen_server:call(?SERVER(SimId), {get, target}).
+
+rate(SimId) -> 
+    gen_server:call(?SERVER(SimId), {get, rate}).
+
+
