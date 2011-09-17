@@ -3,7 +3,10 @@
 -compile(export_all).
 
 run_tests() ->
-    eunit:run(modules(), {suffix, "_test"}).
+    {_Passed, Failed, _PassedList, FailedList} = eunit:run(modules(), {suffix, "_test"}),
+    io:format("----------------------~n"),
+    io:format("Failed tests: ~p ~p~n", [Failed, FailedList]),
+    io:format("----------------------~n").
 
 modules() ->
     modules("ebin/egon_server.app").
