@@ -3,30 +3,30 @@
 -import(io_lib).
 -behaviour(gen_server).
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(tracker_state, {simulators}).
+-record(tracker_state, {simulators, next_id}).
 -record(simulator_manifest, {id, sup_pid, name, desc, owner}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) -> 
-    {ok, #tracker_state{simulators = []}}.
+    {ok, #tracker_state{simulators = [], next_id = 1}}.
 
 handle_call({start_simulator, [Name, Desc, User]}, _From, State) -> 
     Sims = State#tracker_state.simulators,
-    SimId = next_id(Sims),
+    SimId = State#tracker_state.next_id,
     case es_simulator_dispatcher:start_child(SimId) of
         {ok, Child} ->
 	    NewSim = #simulator_manifest{id = SimId, sup_pid = Child, name = Name, desc = Desc, owner = User},
-	    {reply, {ok, SimId}, State#tracker_state{simulators = [NewSim|Sims]}};
+	    {reply, {ok, SimId}, State#tracker_state{simulators = [NewSim|Sims], next_id = SimId + 1}};
 	{error, shutdown} ->
 	    io:format("Starting child failed.~n"),
-	    {reply, {error, shutdown}, State};
+	    {reply, {error, shutdown}, State#tracker_state{next_id = SimId + 1}};
 	{error, {already_started, _}} ->
 	    io:format("That child is already started.~n"),
-	    {reply, {error, already_started}, State};
+	    {reply, {error, already_started}, State#tracker_state{next_id = SimId + 1}};
 	Other ->
 	    io:format("Other: ~p~n", [Other]),
-	    {reply, Other, State}
+	    {reply, Other, State#tracker_state{next_id = SimId + 1}}
     end;
 
 handle_call({stop_simulator, SimId}, _From, State) -> 
@@ -63,14 +63,6 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-next_id(Sims) ->
-    if
-        Sims == [] ->
-	    1;
-	true ->
-	    lists:max(lists:map(fun(S) -> S#simulator_manifest.id end, Sims)) + 1
-    end.
-
 sim_info(SimId, State) ->
     Sims = State#tracker_state.simulators,
 
@@ -104,7 +96,6 @@ get_pid_rec(_, []) ->
 get_pid_rec(SimId, [#simulator_manifest{id = SimId, sup_pid = Pid}|_]) ->
     Pid;
 get_pid_rec(SimId, [#simulator_manifest{id = Id}|Rest]) ->
-    io:format("id: ~p~n", [Id]),
     get_pid_rec(SimId, Rest);
 get_pid_rec(SimId, [_|Rest]) ->
     get_pid_rec(SimId, Rest).

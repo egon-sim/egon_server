@@ -30,6 +30,10 @@ new_sim(doc) ->
 new_sim(Params) ->
     gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
 
+stop_sim(SimId) ->
+    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}).
+
+
 list_sims() ->
     {ok, List} = gen_server:call(es_simulator_tracker_server, {get, simulators}),
     List.

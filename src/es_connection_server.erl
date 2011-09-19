@@ -73,9 +73,9 @@ start_new_simulator(Params) ->
 	    [_, _, User] = Params,
             connect_to_simulator([SimId, User]);
 	{error, shutdown} -> 
-	    {error_starting_child};
+	    {error_starting_child}; % TODO: {error, starting_child_failed}
 	Other -> 
-	    {unknown_error, Other}
+	    {unknown_error, Other} % TODO: {error, Other}
     end.
 
 connect_to_simulator(Params) ->
