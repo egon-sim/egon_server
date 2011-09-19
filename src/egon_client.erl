@@ -18,6 +18,7 @@
 	start_link/3,
 	stop_link/0,
 	new_sim/2,
+	stop_sim/1,
 	conn_to_sim/1,
 	disconnect/0,
 	call/1,
@@ -81,6 +82,17 @@ new_sim(Name, Desc) ->
     gen_server:call(?SERVER, {new_sim, Name, Desc}).
 
 %%-------------------------------------------------------------------
+%% @doc Stops a simulator.
+%%
+%% @spec stop_sim(SimId::integer()) -> {ok, stopped}
+%% @end
+%%-------------------------------------------------------------------
+stop_sim(SimId) ->
+    Retval = call("{stop_sim, " ++ integer_to_list(SimId) ++ "}"),
+    disconnect(),
+    Retval.
+
+%%-------------------------------------------------------------------
 %% @doc Connects to a simulator.
 %%
 %% @spec conn_to_sim(SimId::integer()) -> {connected,
@@ -94,7 +106,7 @@ conn_to_sim(SimId) ->
     gen_server:call(?SERVER, {connect_to_sim, SimId}).
 
 %%-------------------------------------------------------------------
-%% @doc Connects to a simulator.
+%% @doc Disconnects from a simulator.
 %%
 %% @spec disconnect(SimId::integer()) -> ok | not_connected
 %% @end
@@ -209,7 +221,7 @@ handle_call({connect_to_sim, SimId}, _From, State) ->
     	    io:format("Retv: ~p.~n", [Retv]),
     	    case parse(Retv) of
                 {connected, Port} ->
-	    	    io:format("Simulator with id ~p is listening on port ~p.", [SimId, Port]),
+	    	    io:format("Simulator with id ~p is listening on port ~p~n.", [SimId, Port]),
 	    	    Host = State#client_state.host,
             	    {ok, New_sock} = gen_tcp:connect(Host,Port,[{active,false}, {packet,raw}]),
     	    	    {reply, ok, State#client_state{simulator_sock = New_sock}};
@@ -302,21 +314,31 @@ client_test() ->
 
     not_connected = disconnect(),
 
-    ok = conn_to_sim(1),
-    {error, already_connected} = conn_to_sim(2),
+    "{ok,stopped}" = egon_client:stop_sim(2),
+    "{ok,stopped}" = egon_client:stop_sim(1),
+    "{ok,stopped}" = egon_client:stop_sim(3),
+
+    ok = egon_client:new_sim("Test sim 4", "Simulator for purposes of unit testing"),
+    ok = egon_client:new_sim("Test sim 5", "Simulator for purposes of unit testing"),
+
+    ok = conn_to_sim(4),
+    {error, already_connected} = conn_to_sim(5),
     "305.0" = call("{get, es_core_server, tavg}"),
     "[100,1,612]" = call("[{get, es_turbine_server, power}, {get, es_turbine_server, rate}, {get, es_rod_position_server, control_position_counter}]"),
     "ok" = call("{action, es_rod_position_server, step_in}"),
     "304.9416710346633" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
 
-    ok = conn_to_sim(2),
+    ok = conn_to_sim(5),
     "305.0" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
 
-    ok = conn_to_sim(1),
+    ok = conn_to_sim(4),
     "304.9416710346633" = call("{get, es_core_server, tavg}"),
     ok = disconnect(),
+
+    "{ok,stopped}" = egon_client:stop_sim(4),
+    "{ok,stopped}" = egon_client:stop_sim(5),
 
     egon_server:stop(),
     stopped = stop_link(),

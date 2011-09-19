@@ -61,9 +61,10 @@ call(_State, {ask, sim_clients, SimId}) ->
     sim_clients(SimId);
 call(_State, {ask, list_sims}) ->
     list_sims();
+call(_State, {stop_sim, SimId}) ->
+    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId});
 call(_State, Req) ->
     {unknown_request, Req}.
-
 
 
 start_new_simulator(Params) ->

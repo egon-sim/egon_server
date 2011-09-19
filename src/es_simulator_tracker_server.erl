@@ -95,7 +95,7 @@ get_pid_rec(_, []) ->
     none;
 get_pid_rec(SimId, [#simulator_manifest{id = SimId, sup_pid = Pid}|_]) ->
     Pid;
-get_pid_rec(SimId, [#simulator_manifest{id = Id}|Rest]) ->
+get_pid_rec(SimId, [#simulator_manifest{}|Rest]) ->
     get_pid_rec(SimId, Rest);
 get_pid_rec(SimId, [_|Rest]) ->
     get_pid_rec(SimId, Rest).
