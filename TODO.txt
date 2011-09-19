@@ -35,6 +35,7 @@ Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
 %- rename es_clock_server:handle_call({start_ticking}); to es_clock_server:handle_call({action, start_ticking}); and es_clock_server:handle_call({stop_ticking}); to es_clock_server:handle_call({action, stop_ticking});
 %0 move io:format to error_handler:info_report
+#0 es_simulator_tracker_server should reuse old free SimIds when starting new simulator
 
 LEGEND:
 
