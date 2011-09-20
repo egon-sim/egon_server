@@ -370,67 +370,67 @@ csv_entry([Head|Rest], Acc) ->
 
 unit_test() ->
     SimId = 1,
-    {ok, _} = start_link(SimId),
+    ?assertEqual({ok, _}, start_link(SimId)),
 
     ?assertEqual({error, {not_set, cycle_len}}, start_logging(SimId)),
-    ok = set_cycle_len(SimId, 1000),
-    1000 = cycle_len(SimId),
+    ?assertEqual(ok, set_cycle_len(SimId, 1000)),
+    ?assertEqual(1000, cycle_len(SimId)),
 
-    {error, {not_set, parameters}} = start_logging(SimId),
-    ok = add_parameters(SimId, [{"Node", {erlang, node, []}}]),
+    ?assertEqual({error, {not_set, parameters}}, start_logging(SimId)),
+    ?assertEqual(ok, add_parameters(SimId, [{"Node", {erlang, node, []}}])),
 
-    [#log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}] = parameters(SimId),
+    ?assertEqual([#log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
 
-    stopped = status(SimId),
-    ok = start_logging(SimId),
-    running = status(SimId),
+    ?assertEqual(stopped, status(SimId)),
+    ?assertEqual(ok, start_logging(SimId)),
+    ?assertEqual(running, status(SimId)),
     timer:sleep(2000),
 
-    ok = set_cycle_len(SimId, 500),
-    500 = cycle_len(SimId),
+    ?assertEqual(ok, set_cycle_len(SimId, 500)),
+    ?assertEqual(500, cycle_len(SimId)),
 
-    ok = add_parameter(SimId, {"Nodes", {erlang, nodes, []}}),
-    [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
-    #log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}] = parameters(SimId),
+    ?assertEqual(ok, add_parameter(SimId, {"Nodes", {erlang, nodes, []}})),
+    ?assertEqual([#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
+    #log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
 
     timer:sleep(2000),
-    ok = stop_logging(SimId),
-    stopped = status(SimId),
+    ?assertEqual(ok, stop_logging(SimId)),
+    ?assertEqual(stopped, status(SimId)),
     Database = database(SimId),
-    5 = length(Database),
-    #log_entry{parameters = [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}}, 
-    #log_parameter{name = "Node", mfa = {erlang, node, []}}]} = lists:last(Database),
-    Retval = csv_dump(SimId),
-    io:format("~p~n", [Retval]),
-    stopped = stop_link(SimId),
+    ?assertEqual(5, length(Database)),
+    ?assertEqual(#log_entry{parameters = [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}}, 
+    #log_parameter{name = "Node", mfa = {erlang, node, []}}]}, lists:last(Database)),
+%    Retval = csv_dump(SimId),
+%    io:format("~p~n", [Retval]),
+    ?assertEqual(stopped, stop_link(SimId)),
     ok.
 
 integration_test() ->
-    ok = egon_server:start(),
+    ?assertEqual(ok, egon_server:start()),
     {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
-    true = egon_server:sim_loaded(SimId),
+    ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
-    ok = set_cycle_len(SimId, 500),
+    ?assertEqual(ok, set_cycle_len(SimId, 500)),
 
     ok = add_parameters(SimId, [
         {"Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
     ]),
 
-    ok = start_logging(SimId),
+    ?assertEqual(ok, start_logging(SimId)),
     es_rod_position_server:step_in(SimId),
     es_rod_position_server:step_in(SimId),
     timer:sleep(2000),
     es_rod_position_server:step_in(SimId),
     es_rod_position_server:step_in(SimId),
 
-    ok = add_parameter(SimId, 
+    ?assertEqual(ok, add_parameter(SimId, 
         {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
-    ),
+    )),
 
     timer:sleep(2000),
-    ok = stop_logging(SimId),
-    Retval = csv_dump(SimId),
-    io:format("~p~n", [Retval]),
-    egon_server:stop(),
+    ?assertEqual(ok, stop_logging(SimId)),
+%    Retval = csv_dump(SimId),
+%    io:format("~p~n", [Retval]),
+    ?assertEqual(ok, egon_server:stop()),
     ok.

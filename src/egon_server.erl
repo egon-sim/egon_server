@@ -43,12 +43,19 @@ sim_loaded(SimId) ->
     timer:sleep(100),
     true.
 
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+
+-include_lib("include/es_common.hrl").
+
 unit_test() ->
-    ok = egon_server:start(),
+    ?assertEqual(ok, egon_server:start()),
 
-    {ok,1} = new_sim("Tester", "Test sim 1", "Simulator for purposes of unit testing"),
+    ?assertEqual({ok,1}, new_sim("Tester", "Test sim 1", "Simulator for purposes of unit testing")),
 
-    {ok,stopped} = stop_sim(1),
+    ?assertEqual({ok,stopped}, stop_sim(1)),
 
-    egon_server:stop(),
+    ?assertEqual(ok, egon_server:stop()),
     ok.

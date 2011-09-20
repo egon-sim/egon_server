@@ -10,16 +10,16 @@ round(Float, Points) ->
     Dec = math:pow(10, Points),
     round(Float * Dec) / Dec.
 
-c2f_delta_test() ->
-    -9.99 = round(c2f_delta(-5.55), 2),
-    -4.99 = round(c2f_delta(-2.77), 2),
-    -2.99 = round(c2f_delta(-1.66), 2),
-    -1.49 = round(c2f_delta(-0.83), 2),
-    -0.99 = round(c2f_delta(-0.55), 2),
-    0.99 = round(c2f_delta(0.55), 2),
-    1.49 = round(c2f_delta(0.83), 2),
-    2.99 = round(c2f_delta(1.66), 2),
-    4.99 = round(c2f_delta(2.77), 2),
-    9.99 = round(c2f_delta(5.55), 2),
+unit_test() ->
+    ?assertEqual(-9.99, round(c2f_delta(-5.55), 2)),
+    ?assertEqual(-4.99, round(c2f_delta(-2.77), 2)),
+    ?assertEqual(-2.99, round(c2f_delta(-1.66), 2)),
+    ?assertEqual(-1.49, round(c2f_delta(-0.83), 2)),
+    ?assertEqual(-0.99, round(c2f_delta(-0.55), 2)),
+    ?assertEqual(0.99, round(c2f_delta(0.55), 2)),
+    ?assertEqual(1.49, round(c2f_delta(0.83), 2)),
+    ?assertEqual(2.99, round(c2f_delta(1.66), 2)),
+    ?assertEqual(4.99, round(c2f_delta(2.77), 2)),
+    ?assertEqual(9.99, round(c2f_delta(5.55), 2)),
 
     ok.

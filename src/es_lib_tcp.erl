@@ -168,18 +168,18 @@ unit_test() -> ok.
 unused() ->
 %unit_test() ->
     Port = 1055,
-    {ok, _} = start_link(Port),
+    ?assertEqual({ok, _}, start_link(Port)),
 
     {ok,Client_sock} = gen_tcp:connect(localhost,Port,[{active,false}, {packet,raw}]),
     
-    {ok, "nonode@nohost"} = send(Client_sock,"{erlang, node, []}"),
+    ?assertEqual({ok, "nonode@nohost"}, send(Client_sock,"{erlang, node, []}")),
 
-    {ok, "8.0"} = send(Client_sock,"{math, pow, [2, 3]}"),
+    ?assertEqual({ok, "8.0"}, send(Client_sock,"{math, pow, [2, 3]}")),
     
-    {ok, "[nonode@nohost,8.0]"} = send(Client_sock,"{erlang, node, []},{math, pow, [2, 3]}"),
+    ?assertEqual({ok, "[nonode@nohost,8.0]"}, send(Client_sock,"{erlang, node, []},{math, pow, [2, 3]}")),
 
     gen_tcp:close(Client_sock),
-    stop_link(),
+    ?assertEqual(ok, stop_link()),
     ok.
 
 

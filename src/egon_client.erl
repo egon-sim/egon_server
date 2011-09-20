@@ -306,40 +306,40 @@ send(Message, State) ->
 -include_lib("include/es_common.hrl").
 
 client_test() ->
-    ok = egon_server:start(),
-    {ok,_} = start_link("localhost", 1055, "Test user"),
-    ok = new_sim("Test sim 1", "Simulator for purposes of unit testing"),
-    ok = new_sim("Test sim 2", "Simulator for purposes of unit testing"),
-    ok = new_sim("Test sim 3", "Simulator for purposes of unit testing"),
+    ?assertEqual(ok, egon_server:start()),
+    ?assertEqual({ok,_}, start_link("localhost", 1055, "Test user")),
+    ?assertEqual(ok, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
+    ?assertEqual(ok, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
+    ?assertEqual(ok, new_sim("Test sim 3", "Simulator for purposes of unit testing")),
 
-    not_connected = disconnect(),
+    ?assertEqual(not_connected, disconnect()),
 
-    "{ok,stopped}" = egon_client:stop_sim(2),
-    "{ok,stopped}" = egon_client:stop_sim(1),
-    "{ok,stopped}" = egon_client:stop_sim(3),
+    ?assertEqual("{ok,stopped}", egon_client:stop_sim(2)),
+    ?assertEqual("{ok,stopped}", egon_client:stop_sim(1)),
+    ?assertEqual("{ok,stopped}", egon_client:stop_sim(3)),
 
-    ok = egon_client:new_sim("Test sim 4", "Simulator for purposes of unit testing"),
-    ok = egon_client:new_sim("Test sim 5", "Simulator for purposes of unit testing"),
+    ?assertEqual(ok, egon_client:new_sim("Test sim 4", "Simulator for purposes of unit testing")),
+    ?assertEqual(ok, egon_client:new_sim("Test sim 5", "Simulator for purposes of unit testing")),
 
-    ok = conn_to_sim(4),
-    {error, already_connected} = conn_to_sim(5),
-    "305.0" = call("{get, es_core_server, tavg}"),
-    "[100,1,612]" = call("[{get, es_turbine_server, power}, {get, es_turbine_server, rate}, {get, es_rod_position_server, control_position_counter}]"),
-    "ok" = call("{action, es_rod_position_server, step_in}"),
-    "304.9416710346633" = call("{get, es_core_server, tavg}"),
-    ok = disconnect(),
+    ?assertEqual(ok, conn_to_sim(4)),
+    ?assertEqual({error, already_connected}, conn_to_sim(5)),
+    ?assertEqual("305.0", call("{get, es_core_server, tavg}")),
+    ?assertEqual("[100,1,612]", call("[{get, es_turbine_server, power}, {get, es_turbine_server, rate}, {get, es_rod_position_server, control_position_counter}]")),
+    ?assertEqual("ok", call("{action, es_rod_position_server, step_in}")),
+    ?assertEqual("304.9416710346633", call("{get, es_core_server, tavg}")),
+    ?assertEqual(ok, disconnect()),
 
-    ok = conn_to_sim(5),
-    "305.0" = call("{get, es_core_server, tavg}"),
-    ok = disconnect(),
+    ?assertEqual(ok, conn_to_sim(5)),
+    ?assertEqual("305.0", call("{get, es_core_server, tavg}")),
+    ?assertEqual(ok, disconnect()),
 
-    ok = conn_to_sim(4),
-    "304.9416710346633" = call("{get, es_core_server, tavg}"),
-    ok = disconnect(),
+    ?assertEqual(ok, conn_to_sim(4)),
+    ?assertEqual("304.9416710346633", call("{get, es_core_server, tavg}")),
+    ?assertEqual(ok, disconnect()),
 
-    "{ok,stopped}" = egon_client:stop_sim(4),
-    "{ok,stopped}" = egon_client:stop_sim(5),
+    ?assertEqual("{ok,stopped}", egon_client:stop_sim(4)),
+    ?assertEqual("{ok,stopped}", egon_client:stop_sim(5)),
 
-    egon_server:stop(),
-    stopped = stop_link(),
+    ?assertEqual(ok, egon_server:stop()),
+    ?assertEqual(stopped, stop_link()),
     ok.

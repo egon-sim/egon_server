@@ -169,16 +169,16 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 unit_test() ->
     SimId = 1,
-    {ok, _} = start_link(SimId),
+    ?assertEqual({ok, _}, start_link(SimId)),
 
-    stopped = stop_link(SimId),
+    ?assertEqual(stopped, stop_link(SimId)),
     ok.
 
 
 integration_test() ->
-    ok = egon_server:start(),
-    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
-    true = egon_server:sim_loaded(SimId),
+    ?assertEqual(ok, egon_server:start()),
+    ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
+    ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
     egon_server:run(SimId),
 
