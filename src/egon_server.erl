@@ -55,6 +55,8 @@ unit_test() ->
 
     ?assertEqual({ok,1}, new_sim("Tester", "Test sim 1", "Simulator for purposes of unit testing")),
 
+    ?assertEqual(ok, egon_server:run(1)),
+
     ?assertEqual({ok,stopped}, stop_sim(1)),
 
     ?assertEqual(ok, egon_server:stop()),

@@ -180,7 +180,7 @@ integration_test() ->
     ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
     ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
-    egon_server:run(SimId),
+    ?assertEqual(ok, egon_server:run(SimId)),
 
     ?assertEqual(100, power(SimId)),
     ?assertEqual(false, go(SimId)),

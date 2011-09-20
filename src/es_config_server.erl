@@ -17,10 +17,12 @@ handle_call({get, runing_servers_list}, _From, State) ->
     {reply, L, State};
 
 handle_call({freaze_sim}, _From, State) ->
+    error_logger:info_report(["Pausing simulator execution."]),
     SimId = State#config_state.simid,
     {reply, gen_server:call({global, {SimId, es_clock_server}}, {stop_ticking}), State};
 
 handle_call({unfreaze_sim}, _From, State) ->
+    error_logger:info_report(["Starting simulator execution."]),
     SimId = State#config_state.simid,
     {reply, gen_server:call({global, {SimId, es_clock_server}}, {start_ticking}), State};
 

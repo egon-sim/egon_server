@@ -180,15 +180,17 @@ integration_test() ->
     ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
     ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
+    ?assertEqual(ok, egon_server:run(SimId)),
+
     ?assertEqual(1515, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
 
-    borate(SimId, 10000),
+    borate(SimId, 200),
+
+    timer:sleep(2500),
+    ?assertEqual(1517, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
 
     timer:sleep(2000),
-    ?assertEqual(1513, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
+    ?assertEqual(1519, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
 
-    timer:sleep(2000),
-    ?assertEqual(1511, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
-
-    ?assertEqual(stopped, egon_server:stop()),
+    ?assertEqual(ok, egon_server:stop()),
     ok.
