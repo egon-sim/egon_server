@@ -3,17 +3,30 @@
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, pls}).
 -compile(export_all).
 
 start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+
+start_link(SimId, Dir) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId, Dir], []).
 
 stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
 
 init([SimId]) -> 
     case fill_curvebook() of
+        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} ->
+            {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}};
+        {error, application_undefined} ->
+	    error_logger:info_report(["Curvebook server started with undefined application."]),
+            {error, application_undefined};
+        {error, _} ->
+            {error}
+    end;
+
+init([SimId, Dir]) -> 
+    case fill_curvebook(Dir) of
         {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} ->
             {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}};
         {error, _} ->
@@ -50,9 +63,14 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fill_curvebook() ->
-    {ok, Priv} = application:get_env(egon_server, priv),
-    {ok, Curvebook} = application:get_env(egon_server, curvebook),
-    fill_curvebook(Priv ++ Curvebook).
+    case application:get_application() of
+        {ok, App} ->
+	    {ok, Priv} = application:get_env(App, priv),
+    	    {ok, Curvebook} = application:get_env(App, curvebook),
+    	    fill_curvebook(Priv ++ Curvebook);
+	undefined ->
+	    {error, application_undefined}
+    end.
 
 fill_curvebook(Dir) ->
     Is_dir = filelib:is_dir(Dir),

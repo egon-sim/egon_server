@@ -322,7 +322,7 @@ position_to_counter([Letter|Number], Control_rod_stops, Last_overlap, Overlap, C
 
 unit_test() ->
     SimId = 1,
-    ?assertEqual({ok, _}, es_curvebook_server:start_link(SimId)),
+    ?assertEqual({ok, _}, es_curvebook_server:start_link(SimId, "priv/curvebook/")),
     ?assertEqual({ok, _}, start_link(SimId)),
     ?assertEqual(ok, set_control_position_counter(SimId, 612)),
     ?assertEqual(ok, set_shutdown_position_counter(SimId, 228)),
