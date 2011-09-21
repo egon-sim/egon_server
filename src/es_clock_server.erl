@@ -1,11 +1,69 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_clock_server).
--include_lib("include/es_common.hrl").
--behaviour(gen_server).
--import(timer).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(clock_state, {simid, listeners, timer, cycle_len, cycle_no, status, log_ticks}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+-behaviour(gen_server).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+-import(timer).
+
+% API
+-export([
+	start_link/1,
+	stop_link/1
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% tests
+-export([unit_test/0, integration_test/0]).
+
+% data structures
+-record(clock_state, {
+		     simid,
+		     isteners,
+		     timer,
+		     cycle_len,
+		     cycle_no,
+		     status,
+		     log_ticks
+		     }).
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+add_listener(SimId, Listener) ->
+    gen_server:call(?SERVER(SimId), {add_listener, Listener).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
     {ok, #clock_state{simid = SimId, listeners=[], timer=none, cycle_len=none, cycle_no=0, status=stopped, log_ticks=false}}.
@@ -101,7 +159,10 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
 
 send_ticks(State) ->
 %    io:format("Listeners: ~w~n", [State#clock_state.listeners]),
@@ -127,3 +188,12 @@ rem_listener(Listener, State) ->
     New_listeners = lists:subtract(lists:sort(Old_listeners), [Listener]),
     State#clock_state{listeners=New_listeners}.
 
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("include/es_common.hrl").
+
+unit_test() -> ok.
+
+integration_test() -> ok.
