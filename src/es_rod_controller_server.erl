@@ -1,14 +1,76 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server representing a model of control and shutdown rods
+%%%      controlling system. It moves rods in and out of the core
+%%%      depending on Tavg - Tref mismatch.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_rod_controller_server).
--include_lib("include/es_common.hrl").
--behaviour(gen_server).
--import(es_convert).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(rod_controller_state, {simid, mode, speed, manual_speed, ticks_per_second, ticks_left}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+-behaviour(gen_server).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+-import(es_convert).
+
+% API
+-export([
+	start_link/1,
+	stop_link/0
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% tests
+-export([unit_test/0, integration_test/0]).
+
+% data structures
+-record(rod_controller_state, {
+			      simid,
+			      mode,
+			      speed,
+			      manual_speed,
+			      ticks_per_second,
+			      ticks_left
+			      }).
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+speed(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, speed}).
+
+mode(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, mode}).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
-    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
+    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, ?SERVER(SimId)}),
     Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
     {ok, #rod_controller_state{simid = SimId, speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
 
@@ -58,6 +120,11 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
 
 rod_speed(Terr, Old_speed) ->
     Terr_F = es_convert:c2f_delta(Terr),
@@ -117,3 +184,12 @@ calc_terr(#rod_controller_state{simid = SimId}) ->
     Tavg = gen_server:call({global, {SimId, es_core_server}}, {get, tavg}),
     Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
     Tref - Tavg.
+
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("include/es_common.hrl").
+
+unit_test() -> ok.
+integration_test() -> ok.
