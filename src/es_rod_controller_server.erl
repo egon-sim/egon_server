@@ -15,7 +15,10 @@
 % API
 -export([
 	start_link/1,
-	stop_link/0
+	stop_link/1,
+	speed/1,
+	mode/1,
+	set_mode/2
 	]).
 
 % gen_server callbacks
@@ -64,15 +67,18 @@ speed(SimId) ->
 mode(SimId) ->
     gen_server:call(?SERVER(SimId), {get, mode}).
 
+set_mode(SimId, Mode) ->
+    gen_server:call(?SERVER(SimId), {set, mode, Mode}).
+
 
 %%%==================================================================
 %%% gen_server callbacks
 %%%==================================================================
 
 init([SimId]) -> 
-    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, ?SERVER(SimId)}),
+    ok = es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
-    {ok, #rod_controller_state{simid = SimId, speed=0, manual_speed = Manual_speed, ticks_left = 0}}.
+    {ok, #rod_controller_state{simid = SimId, mode=manual, speed=Manual_speed, manual_speed = Manual_speed, ticks_left = 0}}.
 
 handle_call({get, speed}, _From, State) ->
     {reply, State#rod_controller_state.speed, State};
@@ -85,21 +91,18 @@ handle_call({set, mode, manual}, _From, State) ->
 handle_call({set, mode, auto}, _From, State) ->
     SimId = State#rod_controller_state.simid,
     Second_to_ticks = gen_server:call({global, {SimId, es_clock_server}}, {get, seconds_to_ticks, 1}),
-    {reply, ok, State#rod_controller_state{mode=auto, ticks_per_second = Second_to_ticks}};
+    {reply, ok, State#rod_controller_state{speed=rod_speed(State), mode=auto, ticks_per_second = Second_to_ticks}};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= manual ->
     {reply, tick, State};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto ->
-    Terr = calc_terr(State),
-
-    Old_speed = State#rod_controller_state.speed,
-    New_speed = rod_speed(Terr, Old_speed),
+    New_speed = rod_speed(State),
 
     Ticks_left = State#rod_controller_state.ticks_left,
     New_ticks = ticks_to_step(State),
 
-%    io:format("~p, ~p, ~p, ~p~n", [Terr, New_speed, Ticks_left, New_ticks]),
+%    io:format("Terr:~p, New:_speed:~p, Ticks_left:~p, Old_ticks:~p~n", [Terr, New_speed, Ticks_left, New_ticks]),
 
     if
         Ticks_left =< 1 ->
@@ -125,6 +128,10 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%==================================================================
 %%% Internal functions
 %%%==================================================================
+rod_speed(State) ->
+    Terr = calc_terr(State),
+    Old_speed = State#rod_controller_state.speed,
+    rod_speed(Terr, Old_speed).
 
 rod_speed(Terr, Old_speed) ->
     Terr_F = es_convert:c2f_delta(Terr),
@@ -191,5 +198,49 @@ calc_terr(#rod_controller_state{simid = SimId}) ->
 %%%==================================================================
 -include_lib("include/es_common.hrl").
 
-unit_test() -> ok.
-integration_test() -> ok.
+unit_test() -> 
+    SimId = 1,
+    ?assertEqual({ok, _}, es_curvebook_server:start_link(SimId, "priv/curvebook/")),
+    ?assertEqual({ok, _}, es_clock_server:start_link(SimId)),
+    ?assertEqual({ok, _}, es_rod_position_server:start_link(SimId)),
+    ?assertEqual({ok, _}, start_link(SimId)),
+
+    ?assertEqual(manual, mode(SimId)),
+    ?assertEqual(48, speed(SimId)),
+
+    ?assertEqual(stopped, stop_link(SimId)),
+    ?assertEqual(stopped, es_curvebook_server:stop_link(SimId)),
+    ?assertEqual(stopped, es_rod_position_server:stop_link(SimId)),
+    ?assertEqual(stopped, es_clock_server:stop_link(SimId)),
+
+    ok.
+
+integration_test() ->
+    ?assertEqual(ok, egon_server:start()),
+    ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
+    ?assertEqual(true, egon_server:sim_loaded(SimId)),
+
+    ?assertEqual(ok, egon_server:run(SimId)),
+
+    ?assertEqual(manual, mode(SimId)),
+    ?assertEqual(48, speed(SimId)),
+
+    ?assertEqual(ok, es_rod_position_server:set_control_position_str(SimId, "D200")),
+
+    ?assertEqual(ok, set_mode(SimId, auto)),
+
+    ?assertEqual(auto, mode(SimId)),
+    ?assertEqual(72, speed(SimId)),
+
+    timer:sleep(1500),
+
+    ?assertEqual(auto, mode(SimId)),
+    ?assertEqual(72, speed(SimId)),
+    ?assertEqual(585, es_rod_position_server:control_position_counter(SimId)),
+
+    timer:sleep(4000),
+    ?assertEqual(41.30, es_convert:round(speed(SimId), 2)),
+    ?assertEqual(588, es_rod_position_server:control_position_counter(SimId)),
+
+    ?assertEqual(ok, egon_server:stop()),
+    ok.
