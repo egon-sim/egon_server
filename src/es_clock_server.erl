@@ -13,7 +13,8 @@
 % API
 -export([
 	start_link/1,
-	stop_link/1
+	stop_link/1,
+	add_listener/2
 	]).
 
 % gen_server callbacks
@@ -25,7 +26,7 @@
 % data structures
 -record(clock_state, {
 		     simid,
-		     isteners,
+		     listeners,
 		     timer,
 		     cycle_len,
 		     cycle_no,
@@ -58,7 +59,7 @@ stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
 
 add_listener(SimId, Listener) ->
-    gen_server:call(?SERVER(SimId), {add_listener, Listener).
+    gen_server:call(?SERVER(SimId), {add_listener, Listener}).
 
 
 %%%==================================================================
