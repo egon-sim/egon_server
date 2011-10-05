@@ -200,10 +200,10 @@ calc_terr(#rod_controller_state{simid = SimId}) ->
 
 unit_test() -> 
     SimId = 1,
-    ?assertEqual({ok, _}, es_curvebook_server:start_link(SimId, "priv/curvebook/")),
-    ?assertEqual({ok, _}, es_clock_server:start_link(SimId)),
-    ?assertEqual({ok, _}, es_rod_position_server:start_link(SimId)),
-    ?assertEqual({ok, _}, start_link(SimId)),
+    {ok, _} = es_curvebook_server:start_link(SimId, "priv/curvebook/"),
+    {ok, _} = es_clock_server:start_link(SimId),
+    {ok, _} = es_rod_position_server:start_link(SimId),
+    {ok, _} = start_link(SimId),
 
     ?assertEqual(manual, mode(SimId)),
     ?assertEqual(48, speed(SimId)),
@@ -217,7 +217,7 @@ unit_test() ->
 
 integration_test() ->
     ?assertEqual(ok, egon_server:start()),
-    ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
+    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
     ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
     ?assertEqual(ok, egon_server:run(SimId)),
