@@ -74,7 +74,7 @@ set_buffer(#lib_tcp_state{} = State, Buffer) ->
     State#lib_tcp_state{buffer = Buffer}.
 
 parse_call(Buffer) ->
-%    io:format("~p~n", [Buffer]),
+    io:format("~p~n", [Buffer]),
     {match, [Tuple]} =  re:run(Buffer, ?PACKET_FORMAT, [{capture, [1], list}]),
 %    io:format("~p~n", [Tuple]),
     {ok, Tokens, _Line} = erl_scan:string("[" ++ Tuple ++ "]."),
@@ -168,7 +168,7 @@ unit_test() -> ok.
 unused() ->
 %unit_test() ->
     Port = 1055,
-    ?assertEqual({ok, _}, start_link(Port)),
+    {ok, _} = start_link(Port),
 
     {ok,Client_sock} = gen_tcp:connect(localhost,Port,[{active,false}, {packet,raw}]),
     

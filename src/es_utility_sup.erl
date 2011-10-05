@@ -71,17 +71,17 @@ unit_test() ->
 
 integration_test() ->
     ?assertEqual(ok, egon_server:start()),
-    ?assertEqual({ok, SimId}, egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"])),
+    {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
     ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
     ?assertEqual(ok, egon_server:run(SimId)),
 
-    ?assertEqual([
+    [
      {es_log_server, _, worker, [es_log_server]},
      {es_interface_dispatcher, _, supervisor, [es_interface_dispatcher]},
      {es_clock_server, _, worker, [es_clock_server]},
      {es_config_server, _, worker, [es_config_server]}
-    ], supervisor:which_children(?SERVER(SimId))),
+    ] = supervisor:which_children(?SERVER(SimId)),
 
     ?assertEqual(ok, egon_server:stop()),
     ok.

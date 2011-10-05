@@ -307,7 +307,7 @@ send(Message, State) ->
 
 client_test() ->
     ?assertEqual(ok, egon_server:start()),
-    ?assertEqual({ok,_}, start_link("localhost", 1055, "Test user")),
+    {ok,_} = start_link("localhost", 1055, "Test user"),
     ?assertEqual(ok, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
     ?assertEqual(ok, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
     ?assertEqual(ok, new_sim("Test sim 3", "Simulator for purposes of unit testing")),
