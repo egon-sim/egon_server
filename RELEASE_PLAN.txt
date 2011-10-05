@@ -1,1 +1,0 @@
-*0 Make rod speed accurate for speeds greater than 1 step / sec (get current speed and time elapsed since last moving of rods, then just move rods and recalculate speed)
