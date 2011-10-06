@@ -81,8 +81,12 @@ start_new_simulator(Params) ->
 
 connect_to_simulator(Params) ->
     [SimId|_] = Params,
-    {ok, [{SimId, _, Port}]} = gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Params}),
-    {connected, Port}.
+    case gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Params}) of
+        {ok, [{SimId, _, Port}]} ->
+	    {connected, SimId, Port};
+	Other ->
+	    Other
+    end.
 
 stop_simulator(SimId) ->
     {ok, stopped} = gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}),

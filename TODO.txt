@@ -1,3 +1,6 @@
+BUGS:
+* es_connection_server:connect_to_simulator now returns {connected, [SimId, Port]} instead of {connected, Port} - see if this breaks anything
+
 Protocol:
 *- assemble by hand a list of messages which es_interface_server can send to other servers
 #- {set, flux_now, Flux} and {set_now, flux, Flux} transform to {set, flux, Flux}
