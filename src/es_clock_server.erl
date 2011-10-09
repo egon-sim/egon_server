@@ -143,7 +143,12 @@ handle_call({tick}, _From, State) when State#clock_state.status =:= running ->
     {reply, ok, New_state#clock_state{cycle_no=Cycle_no + 1}};
 
 handle_call({tick}, _From, State) when State#clock_state.status =:= stopped ->
-    io:format("Tick: ~w~n", [State#clock_state.cycle_no]),
+    if
+	State#clock_state.log_ticks ->
+            io:format("Tick: ~w~n", [State#clock_state.cycle_no]);
+    	true ->
+            ok
+    end,
     {reply, ok, State};
 
 handle_call({tick}, _From, State) ->
