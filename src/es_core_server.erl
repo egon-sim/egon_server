@@ -32,22 +32,9 @@ handle_call({set, burnup, Val}, _From, State) ->
 handle_call({get, flux}, _From, State) ->
     {reply, State#core_state.flux, State};
 
-handle_call({set, flux_now, Flux}, {_From, _}, State) ->
-%    error_logger:info_report(["Core: Set_now", {flux, Flux}]),
-    {reply, ok, State#core_state{flux=Flux}};
-
-handle_call({set_now, flux, Flux}, {_From, _}, State) ->
-%    error_logger:info_report(["Core: Set_now", {flux, Flux}]),
-    {reply, ok, State#core_state{flux=Flux}};
-
-handle_call({set, flux, Flux}, {From, _}, #core_state{simid=SimId} = State) when From =:= {SimId, flux_buffer_server} ->
-%    error_logger:info_report(["Core: Set from flux_buffer", {flux, Flux}]),
-    {reply, ok, State#core_state{flux=Flux}};
-
 handle_call({set, flux, Flux}, _From, State) ->
-%    error_logger:info_report(["Core: Set", {flux, Flux}]),
-    SimId = State#core_state.simid,
-    {reply, gen_server:call({global, {SimId, es_flux_buffer_server}}, {set, flux, Flux}), State};
+    error_logger:info_report(["Core: Set", {flux, Flux}]),
+    {reply, ok, State#core_state{flux=Flux}};
 
 handle_call({get, tavg}, _From, State) ->
     SimId = State#core_state.simid,

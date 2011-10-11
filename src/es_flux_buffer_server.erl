@@ -71,7 +71,7 @@ handle_call({tick}, _From, State) ->% when From =:= State#flux_buffer_state.time
 	true ->
 	    New = Flux + Direction * State#flux_buffer_state.flux_diff_per_cycle,
 %	    error_logger:info_report(["FBS: Enter", {flux, Flux}, {target, Target}]),
-    	    gen_server:call({global, {SimId, es_core_server}}, {set_now, flux, New}),
+    	    gen_server:call({global, {SimId, es_core_server}}, {set, flux, New}),
 	    {reply, tick, State}
     end;
 

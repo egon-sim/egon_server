@@ -18,5 +18,5 @@
 
 {es_core_server, burnup, 7000},
 {es_core_server, boron, 1515},
-{es_core_server, flux_now, 100}
+{es_core_server, flux, 100}
 ].

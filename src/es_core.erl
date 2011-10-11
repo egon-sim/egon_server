@@ -15,7 +15,7 @@ get(SimId, What, Arg1) ->
     gen_server:call({global, {SimId, es_core_server}}, {get, What, Arg1}).
 
 set(SimId, flux, Arg1) ->
-    gen_server:call({global, {SimId, es_core_server}}, {set_now, flux, Arg1});
+    gen_server:call({global, {SimId, es_core_server}}, {set, flux, Arg1});
 set(SimId, What, Arg1) ->
     gen_server:call({global, {SimId, es_core_server}}, {set, What, Arg1}).
 
