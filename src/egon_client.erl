@@ -198,8 +198,8 @@ handle_call({new_sim, Name, Desc}, _From, State) ->
     Username = State#client_state.username,
     Params = "[\"" ++ Name ++ "\", \"" ++ Desc ++ "\", \"" ++ Username ++ "\"]",
     case parse(send("{ask, start_new_simulator, " ++ Params ++ "}", State)) of
-        {connected, _Port} ->
-            {reply, ok, State};
+        {connected, SimId, _Port} ->
+            {reply, {ok, SimId}, State};
 	{error_starting_child} ->
 	    io:format("Starting new simulator failed.~n"),
 	    {reply, {error, shutdown}, State};
@@ -220,7 +220,7 @@ handle_call({connect_to_sim, SimId}, _From, State) ->
     	    Retv = send("{ask, connect_to_simulator, " ++ Params ++ "}", State),
     	    io:format("Retv: ~p.~n", [Retv]),
     	    case parse(Retv) of
-                {connected, Port} ->
+                {connected, SimId, Port} ->
 	    	    io:format("Simulator with id ~p is listening on port ~p~n.", [SimId, Port]),
 	    	    Host = State#client_state.host,
             	    {ok, New_sock} = gen_tcp:connect(Host,Port,[{active,false}, {packet,raw}]),
@@ -308,9 +308,9 @@ send(Message, State) ->
 client_test() ->
     ?assertEqual(ok, egon_server:start()),
     {ok,_} = start_link("localhost", 1055, "Test user"),
-    ?assertEqual(ok, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
-    ?assertEqual(ok, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
-    ?assertEqual(ok, new_sim("Test sim 3", "Simulator for purposes of unit testing")),
+    ?assertEqual({ok, 1}, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
+    ?assertEqual({ok, 2}, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
+    ?assertEqual({ok, 3}, new_sim("Test sim 3", "Simulator for purposes of unit testing")),
 
     ?assertEqual(not_connected, disconnect()),
 
@@ -318,8 +318,8 @@ client_test() ->
     ?assertEqual("{ok,stopped}", egon_client:stop_sim(1)),
     ?assertEqual("{ok,stopped}", egon_client:stop_sim(3)),
 
-    ?assertEqual(ok, egon_client:new_sim("Test sim 4", "Simulator for purposes of unit testing")),
-    ?assertEqual(ok, egon_client:new_sim("Test sim 5", "Simulator for purposes of unit testing")),
+    ?assertEqual({ok, 4}, egon_client:new_sim("Test sim 4", "Simulator for purposes of unit testing")),
+    ?assertEqual({ok, 5}, egon_client:new_sim("Test sim 5", "Simulator for purposes of unit testing")),
 
     ?assertEqual(ok, conn_to_sim(4)),
     ?assertEqual({error, already_connected}, conn_to_sim(5)),
