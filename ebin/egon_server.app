@@ -34,7 +34,7 @@
 ]},
    {registered, []},
    {applications, [kernel, stdlib
-   , sasl
+%   , sasl
    ]},
    {mod, {es_app, []}},
    {env, [

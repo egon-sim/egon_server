@@ -39,6 +39,14 @@ Removing dirty hacks:
 %- rename es_clock_server:handle_call({start_ticking}); to es_clock_server:handle_call({action, start_ticking}); and es_clock_server:handle_call({stop_ticking}); to es_clock_server:handle_call({action, stop_ticking});
 %0 move io:format to error_handler:info_report
 #0 es_simulator_tracker_server should reuse old free SimIds when starting new simulator
+#0 integrate ramper into turbine
+
+MAJOR FEATURES ROADMAP:
+1) steam generators
+2) RCS inventory, PRZR level
+3) trip setpoints (OTdT, OPdT)
+4) subcritical multiplication
+
 
 LEGEND:
 

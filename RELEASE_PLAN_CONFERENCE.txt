@@ -1,0 +1,4 @@
+Features to be implemented before HND2012 conference:
+* prototype of FB app
+* prototype of android app
+* S/G model
