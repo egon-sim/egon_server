@@ -29,7 +29,10 @@
 			      simid,
 			      mode,
 			      speed,
+			      in_lockup, % lo | no |hi
 			      manual_speed,
+			      dead_band,
+			      lock_up,
 			      ticks_per_second,
 			      ticks_left
 			      }).
@@ -75,7 +78,9 @@ set_mode(SimId, Mode) ->
 init([SimId]) -> 
     ok = es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
-    {ok, #rod_controller_state{simid = SimId, mode=manual, speed=Manual_speed, manual_speed = Manual_speed, ticks_left = 0}}.
+    Dead_band = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [rod_control_dead_band]}),
+    Lock_up = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [rod_control_lock_up]}),
+    {ok, #rod_controller_state{simid = SimId, mode=manual, speed=Manual_speed, in_lockup=no, manual_speed = Manual_speed, dead_band = Dead_band, lock_up = Lock_up, ticks_left = 0}}.
 
 handle_call({get, speed}, _From, State) ->
     {reply, State#rod_controller_state.speed, State};
@@ -88,13 +93,14 @@ handle_call({set, mode, manual}, _From, State) ->
 handle_call({set, mode, auto}, _From, State) ->
     SimId = State#rod_controller_state.simid,
     Second_to_ticks = gen_server:call({global, {SimId, es_clock_server}}, {get, seconds_to_ticks, 1}),
-    {reply, ok, State#rod_controller_state{speed=rod_speed(State), mode=auto, ticks_per_second = Second_to_ticks}};
+    {In_lockup, Speed} = rod_speed(State),
+    {reply, ok, State#rod_controller_state{speed=Speed, in_lockup=In_lockup, mode=auto, ticks_per_second = Second_to_ticks}};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= manual ->
     {reply, tick, State};
 
 handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto ->
-    New_speed = rod_speed(State),
+    {In_lockup, New_speed} = rod_speed(State),
 
     Ticks_left = State#rod_controller_state.ticks_left,
     New_ticks = ticks_to_step(State),
@@ -110,7 +116,7 @@ handle_call({tick}, _From, State) when State#rod_controller_state.mode =:= auto 
         Ticks_left > 1 ->
 	    New_ticks_left = Ticks_left - 1
     end,
-    New_state = State#rod_controller_state{speed=New_speed, ticks_left = New_ticks_left},
+    New_state = State#rod_controller_state{speed=New_speed, in_lockup=In_lockup, ticks_left = New_ticks_left},
     {reply, tick, New_state};
 
 handle_call(stop, _From, State) ->
@@ -126,44 +132,105 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% Internal functions
 %%%==================================================================
 rod_speed(State) ->
+    Dead_band = State#rod_controller_state.dead_band,
+    Lock_up = State#rod_controller_state.lock_up,
+
+    In_lockup = State#rod_controller_state.in_lockup,
     Terr = calc_terr(State),
     Old_speed = State#rod_controller_state.speed,
-    rod_speed(Terr, Old_speed).
 
-rod_speed(Terr, Old_speed) ->
+    New_in_lockup = in_lockup(Dead_band, Lock_up, In_lockup, Terr, Old_speed),
+
+    {New_in_lockup, rod_speed(Terr, New_in_lockup)}.
+
+in_lockup(Dead_band, Lock_up, hi, Terr, _) ->
+    Upper_hi_limit = Dead_band,
+    Lower_hi_limit = Dead_band - Lock_up,
+
     Terr_F = es_convert:c2f_delta(Terr),
-%    io:format("~w ~w ~w~n", [Terr_F, Terr, Old_speed]),
+
+    if 
+        (Terr_F > Lower_hi_limit) and (Terr_F < Upper_hi_limit) ->
+	    hi;
+	true ->
+	    no
+    end;
+
+in_lockup(Dead_band, Lock_up, lo, Terr, _) ->
+    Upper_lo_limit = -Dead_band + Lock_up,
+    Lower_lo_limit = -Dead_band,
+
+    Terr_F = es_convert:c2f_delta(Terr),
+
+    if 
+        (Terr_F > Lower_lo_limit) and (Terr_F < Upper_lo_limit) ->
+	    lo;
+	true ->
+	    no
+    end;
+
+in_lockup(Dead_band, Lock_up, no, Terr, Old_speed) ->
+    Upper_hi_limit = Dead_band,
+    Lower_hi_limit = Dead_band - Lock_up,
+    Upper_lo_limit = -Dead_band + Lock_up,
+    Lower_lo_limit = -Dead_band,
+
+    Terr_F = es_convert:c2f_delta(Terr),
+
+    if 
+        Terr_F < Lower_lo_limit ->
+	    no;
+        Terr_F < Upper_lo_limit ->
+	    if
+	        Old_speed < 0 ->
+		    lo;
+		true ->
+		    no
+	    end;
+        Terr_F < Lower_hi_limit ->
+	    no;
+        Terr_F < Upper_hi_limit ->
+	    if
+	        Old_speed > 0 ->
+		    hi;
+		true ->
+		    no
+	    end;
+        Terr_F >= Upper_hi_limit ->
+	    no
+    end.
+
+rod_speed(Terr, In_lockup) ->
+    Terr_F = es_convert:c2f_delta(Terr),
+%    io:format("~w ~w ~w~n", [Terr_F, Terr, In_lockup]),
     if
         Terr_F < -5 ->
 	    Speed = -72;
         Terr_F =< -3 ->
-	    Speed = 32 * es_convert:c2f_delta(Terr) + 88;
+	    Speed = 32 * Terr_F + 88;
         Terr_F =< -1.5 ->
 	    Speed = -8;
         Terr_F =< -1 ->
-	    if
-	        Old_speed < 0 ->
-		    Speed = -8;
-		true ->
-		    Speed = 0
-	    end;
+	    Speed = -8;
         Terr_F =< 1 ->
 	    Speed = 0;
         Terr_F =< 1.5 ->
-	    if
-	        Old_speed > 0 ->
-		    Speed = 8;
-		true ->
-		    Speed = 0
-	    end;
+	    Speed = 8;
         Terr_F =< 3 ->
 	    Speed = 8;
         Terr_F =< 5 ->
-	    Speed = 32 * es_convert:c2f_delta(Terr) - 88;
+	    Speed = 32 * Terr_F - 88;
         Terr_F > 5 ->
 	    Speed = 72
    end,
-   Speed.
+    if
+        (In_lockup =:= lo) and (Terr < 0) ->
+	    0;
+        (In_lockup =:= hi) and (Terr > 0) ->
+	    0;
+	true ->
+	    Speed
+    end.
 
 step(State, Speed) ->
     SimId = State#rod_controller_state.simid,
@@ -194,6 +261,63 @@ calc_terr(#rod_controller_state{simid = SimId}) ->
 %%% Test functions
 %%%==================================================================
 -include_lib("eunit/include/eunit.hrl").
+
+in_lockup_test() ->
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, -1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, -1, -8)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, -0.7, 0)),
+    ?assertEqual(lo, in_lockup(1.5, 0.5, no, -0.7, -1)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, -0.5, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, 0, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, 0.5, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, 0.7, 0)),
+    ?assertEqual(hi, in_lockup(1.5, 0.5, no, 0.7, 1)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, 1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, no, 1, 8)),
+
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, -1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, -1, -8)),
+    ?assertEqual(lo, in_lockup(1.5, 0.5, lo, -0.7, 0)),
+    ?assertEqual(lo, in_lockup(1.5, 0.5, lo, -0.7, -1)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, -0.5, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, 0, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, 0.5, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, 0.7, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, 1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, lo, 1, 8)),
+
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, -1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, -1, -8)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, -0.7, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, -0.5, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, 0, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, 0.5, 0)),
+    ?assertEqual(hi, in_lockup(1.5, 0.5, hi, 0.7, 0)),
+    ?assertEqual(hi, in_lockup(1.5, 0.5, hi, 0.7, 1)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, 1, 0)),
+    ?assertEqual(no, in_lockup(1.5, 0.5, hi, 1, 8)),
+    ok.
+
+rod_speed_test() ->
+    ?assertEqual(-72, rod_speed(-3, no)),
+    ?assertEqual(-56.0, rod_speed(-2.5, no)),
+    ?assertEqual(-27.2, es_convert:round(rod_speed(-2, no), 2)),
+    ?assertEqual(-8, rod_speed(-1.5, no)),
+    ?assertEqual(-8, rod_speed(-1, no)),
+    ?assertEqual(-8, rod_speed(-0.7, no)),
+    ?assertEqual(0, rod_speed(-0.7, lo)),
+    ?assertEqual(-8, rod_speed(-0.7, hi)),
+    ?assertEqual(0, rod_speed(-0.5, no)),
+    ?assertEqual(0, rod_speed(0, no)),
+    ?assertEqual(0, rod_speed(0.5, no)),
+    ?assertEqual(8, rod_speed(0.7, no)),
+    ?assertEqual(8, rod_speed(0.7, lo)),
+    ?assertEqual(0, rod_speed(0.7, hi)),
+    ?assertEqual(8, rod_speed(1, no)),
+    ?assertEqual(27.2, es_convert:round(rod_speed(2, no), 2)),
+    ?assertEqual(56.0, rod_speed(2.5, no)),
+    ?assertEqual(72, rod_speed(3, no)),
+    ok.
 
 unit_test() -> 
     SimId = 1,
