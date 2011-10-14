@@ -8,9 +8,8 @@ Protocol:
 %+ more restrictive packet definition regexp in es_lib_tcp, with error recovery
 
 General features:
-*- es_config_server:send_tick/2 should use gen_server:cast instead of gen_server:call
+*- es_clock_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
-*0 es_clock_server should send ticks as gen_server:cast()
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
 #+ every server should have a function which sends all of its exported state variables to es_log_server; that function should be called right after init and every time state is changed -> therefore es_log_server will have a log of all values changes and will be able to plot graphs
 #- implement es_log_server:get_time_range(SimId, StartTime, StopTime, Points) which will return list of values of Points in time range from StartTime to StopTime
@@ -22,7 +21,6 @@ $- xls generation
 
 Separating implementation and configuration:
 *- move set_up_defaults from es_config_server to egon_server
-$+ move hardcoded setpoints from es_rod_controller_server:rod_speed to curvebook/pls
 
 Erlang/OTP problem:
 #? errors in snapshot file do not generate error report
@@ -32,11 +30,9 @@ Erlang/OTP problem:
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
 #0 building a release (OTP in Action, chapter 10)
-%- es_curvebook_server should return sane errors instead of dumping whole table onto the screen
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
-%- rename es_clock_server:handle_call({start_ticking}); to es_clock_server:handle_call({action, start_ticking}); and es_clock_server:handle_call({stop_ticking}); to es_clock_server:handle_call({action, stop_ticking});
 %0 move io:format to error_handler:info_report
 #0 es_simulator_tracker_server should reuse old free SimIds when starting new simulator
 #0 integrate ramper into turbine
