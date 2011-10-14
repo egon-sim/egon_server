@@ -29,7 +29,7 @@
 			      simid,
 			      mode,
 			      speed,
-			      in_lockup, % lo | no |hi
+			      in_lockup, % lo | no | hi
 			      manual_speed,
 			      dead_band,
 			      lock_up,
@@ -203,6 +203,19 @@ in_lockup(Dead_band, Lock_up, no, Terr, Old_speed) ->
 rod_speed(Terr, In_lockup) ->
     Terr_F = es_convert:c2f_delta(Terr),
 %    io:format("~w ~w ~w~n", [Terr_F, Terr, In_lockup]),
+
+    Speed = rod_control_program(Terr_F),
+
+    if
+        (In_lockup =:= lo) and (Terr < 0) ->
+	    0;
+        (In_lockup =:= hi) and (Terr > 0) ->
+	    0;
+	true ->
+	    Speed
+    end.
+
+rod_control_program(Terr_F) ->
     if
         Terr_F < -5 ->
 	    Speed = -72;
@@ -223,14 +236,8 @@ rod_speed(Terr, In_lockup) ->
         Terr_F > 5 ->
 	    Speed = 72
    end,
-    if
-        (In_lockup =:= lo) and (Terr < 0) ->
-	    0;
-        (In_lockup =:= hi) and (Terr > 0) ->
-	    0;
-	true ->
-	    Speed
-    end.
+   Speed.
+
 
 step(State, Speed) ->
     SimId = State#rod_controller_state.simid,
