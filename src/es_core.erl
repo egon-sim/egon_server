@@ -1,5 +1,5 @@
 -module(es_core).
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -import(core_server).
 -compile(export_all).
 

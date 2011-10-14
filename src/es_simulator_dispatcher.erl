@@ -1,5 +1,5 @@
 -module(es_simulator_dispatcher).
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(supervisor).
 -export([start_link/0, start_child/1, stop_child/1, init/1]).
 -define(SERVER, ?MODULE).

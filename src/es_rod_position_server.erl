@@ -31,9 +31,6 @@
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% tests
--export([unit_test/0, integration_test/0]).
-
 % data structures
 -record(rod_position_state, {
 	  simid, % ID of a simulator to which this server belongs
@@ -318,7 +315,7 @@ position_to_counter([Letter|Number], Control_rod_stops, Last_overlap, Overlap, C
 %%%==================================================================
 %%% Test functions
 %%%==================================================================
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 unit_test() ->
     SimId = 1,

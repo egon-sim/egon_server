@@ -32,9 +32,6 @@
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% tests
--export([client_test/0]).
-
 % data structures
 -record(client_state, {
 		      host, % server hostname
@@ -303,7 +300,7 @@ send(Message, State) ->
 %%%==================================================================
 %%% Test functions
 %%%==================================================================
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 client_test() ->
     ?assertEqual(ok, egon_server:start()),

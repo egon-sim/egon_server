@@ -19,9 +19,6 @@
 %% Supervisor callbacks
 -export([init/1]).
 
-% tests
--export([unit_test/0, integration_test/0]).
-
 
 %%%==================================================================
 %%% API
@@ -64,7 +61,7 @@ init([SimId]) ->
 %%%==================================================================
 %%% Test functions
 %%%==================================================================
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 unit_test() ->
     ok.

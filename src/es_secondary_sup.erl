@@ -1,5 +1,5 @@
 -module(es_secondary_sup).
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(supervisor).
 
 %% API

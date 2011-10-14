@@ -22,9 +22,6 @@
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% tests
--export([integration_test/0]).
-
 % data structures
 -record(makeup_buffer_state, {
 			     simid, % ID of a simulator to which this log server belongs
@@ -173,7 +170,7 @@ bor_dil(SimId, [{Action, Diff} | Rest]) ->
 %%% Test functions
 %%%==================================================================
 
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 integration_test() ->
     ?assertEqual(ok, egon_server:start()),

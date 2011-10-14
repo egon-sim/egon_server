@@ -1,5 +1,5 @@
 -module(es_curvebook_server).
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 

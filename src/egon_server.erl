@@ -48,7 +48,7 @@ sim_loaded(SimId) ->
 %%% Test functions
 %%%==================================================================
 
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 unit_test() ->
     ?assertEqual(ok, egon_server:start()),

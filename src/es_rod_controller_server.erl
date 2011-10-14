@@ -24,9 +24,6 @@
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% tests
--export([unit_test/0, integration_test/0]).
-
 % data structures
 -record(rod_controller_state, {
 			      simid,
@@ -196,7 +193,7 @@ calc_terr(#rod_controller_state{simid = SimId}) ->
 %%%==================================================================
 %%% Test functions
 %%%==================================================================
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 unit_test() -> 
     SimId = 1,
@@ -215,7 +212,7 @@ unit_test() ->
 
     ok.
 
-integration_test() ->
+integration_test_() -> {timeout, 10, [fun () ->
     ?assertEqual(ok, egon_server:start()),
     {ok, SimId} = egon_server:new_sim(["Test_server", "Simulator started by test function", "Tester"]),
     ?assertEqual(true, egon_server:sim_loaded(SimId)),
@@ -243,4 +240,4 @@ integration_test() ->
     ?assertEqual(588, es_rod_position_server:control_position_counter(SimId)),
 
     ?assertEqual(ok, egon_server:stop()),
-    ok.
+    ok end]}.

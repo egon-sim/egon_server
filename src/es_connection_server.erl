@@ -1,5 +1,5 @@
 -module(es_connection_server).
--include_lib("include/es_common.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
 -export([call/2, start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, sim_info/1, sim_clients/1, list_sims/0]).
