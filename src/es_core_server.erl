@@ -73,11 +73,11 @@ pcms_from_full_power(State) ->
     Flux = State#core_state.flux,
     SimId = State#core_state.simid,
     Rod_worth = es_rod_position_server:integral_worth(SimId, Burnup, Flux),
-    Power_defect_100 = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, 100]}),
-    Power_defect = gen_server:call({global, {SimId, es_curvebook_server}}, {get, power_defect, [Burnup, Boron, Flux]}),
+    Power_defect_100 = es_curvebook_server:power_defect(SimId, Burnup, Boron, 100),
+    Power_defect = es_curvebook_server:power_defect(SimId, Burnup, Boron, Flux),
 
-    Boron_worth = gen_server:call({global, {SimId, es_curvebook_server}}, {get, boron_worth, [Burnup, Boron]}),
-    Critical_boron = gen_server:call({global, {SimId, es_curvebook_server}}, {get, critical_boron, [Burnup]}),
+    Boron_worth = es_curvebook_server:boron_worth(SimId, Burnup, Boron),
+    Critical_boron = es_curvebook_server:critical_boron(SimId, Burnup),
     Boron_defect = (Boron - Critical_boron) * Boron_worth,
 
 %    io:format("~w ~w ~w ~w ~w ~w~n", [Burnup, Flux, Rod_worth, Power_defect_100, Power_defect, Boron_defect]),
@@ -90,7 +90,7 @@ mtc(State) ->
     Burnup = State#core_state.burnup,
     Flux = State#core_state.flux,
     SimId = State#core_state.simid,
-    gen_server:call({global, {SimId, es_curvebook_server}}, {get, mtc, [Burnup, Boron, Flux]}).
+    es_curvebook_server:mtc(SimId, Burnup, Boron, Flux).
 
 tref_mismatch(State) ->
     Pcms = pcms_from_full_power(State),

@@ -1,1 +1,0 @@
-%- es_curvebook_server should return sane errors instead of dumping whole table onto the screen

@@ -14,11 +14,11 @@
 -export([
 	start_link/1,
 	start_link/2,
-	power_defect/2,
-	boron_worth/2,
-	mtc/2,
+	power_defect/4,
+	boron_worth/3,
+	mtc/4,
 	critical_boron/2,
-	rod_worth/2,
+	rod_worth/3,
 	rod_control_speed_program/2,
 	pls/2,
 	stop_link/1
@@ -67,49 +67,49 @@ start_link(SimId, Dir) ->
     gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId, Dir], []).
 
 %%-------------------------------------------------------------------
-%% @doc Retreives value of power defect for given key.
+%% @doc Retreives value of power defect for given parameters.
 %%
-%% @spec power_defect(SimId::integer(), Key::[float()]) -> float()
+%% @spec power_defect(SimId::integer(), Burnup::float(), Boron::float(), Flux::float()) -> float()
 %% @end
 %%-------------------------------------------------------------------
-power_defect(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, power_defect, Key}).
+power_defect(SimId, Burnup, Boron, Flux) ->
+    gen_server:call(?SERVER(SimId), {get, power_defect, [Burnup, Boron, Flux]}).
 
 %%-------------------------------------------------------------------
-%% @doc Retreives value of boron worth for given key.
+%% @doc Retreives value of boron worth for given parameters.
 %%
-%% @spec boron_worth(SimId::integer(), Key::[float()]) -> float()
+%% @spec boron_worth(SimId::integer(), Burnup::float(), Boron::float()) -> float()
 %% @end
 %%-------------------------------------------------------------------
-boron_worth(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, boron_worth, Key}).
+boron_worth(SimId, Burnup, Boron) ->
+    gen_server:call(?SERVER(SimId), {get, boron_worth, [Burnup, Boron]}).
 
 %%-------------------------------------------------------------------
-%% @doc Retreives value of MTC for given key.
+%% @doc Retreives value of MTC for given parameters.
 %%
-%% @spec mtc(SimId::integer(), Key::[float()]) -> float()
+%% @spec mtc(SimId::integer(), Burnup::float(), Boron::float(), Flux::float()) -> float()
 %% @end
 %%-------------------------------------------------------------------
-mtc(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, mtc, Key}).
+mtc(SimId, Burnup, Boron, Flux) ->
+    gen_server:call(?SERVER(SimId), {get, mtc, [Burnup, Boron, Flux]}).
 
 %%-------------------------------------------------------------------
-%% @doc Retreives value of critical boron concentration for given key.
+%% @doc Retreives value of critical boron concentration for given burnup.
 %%
-%% @spec critical_boron(SimId::integer(), Key::[float()]) -> float()
+%% @spec critical_boron(SimId::integer(), Burnup::float()) -> float()
 %% @end
 %%-------------------------------------------------------------------
-critical_boron(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, critical_boron, Key}).
+critical_boron(SimId, Burnup) ->
+    gen_server:call(?SERVER(SimId), {get, critical_boron, [Burnup]}).
 
 %%-------------------------------------------------------------------
-%% @doc Retreives value of rod worth for given key.
+%% @doc Retreives value of rod worth for given parameters.
 %%
-%% @spec rod_worth(SimId::integer(), Key::[float()]) -> float()
+%% @spec rod_worth(SimId::integer(), Burnup::float(), Counter::integer()) -> float()
 %% @end
 %%-------------------------------------------------------------------
-rod_worth(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, rod_worth, Key}).
+rod_worth(SimId, Burnup, Counter) ->
+    gen_server:call(?SERVER(SimId), {get, rod_worth, [Burnup, Counter]}).
 
 %%-------------------------------------------------------------------
 %% @doc Retreives value of rod speed for given key.
@@ -117,8 +117,8 @@ rod_worth(SimId, Key) ->
 %% @spec rod_control_speed_program(SimId::integer(), Key::[float()]) -> float()
 %% @end
 %%-------------------------------------------------------------------
-rod_control_speed_program(SimId, Key) ->
-    gen_server:call(?SERVER(SimId), {get, rod_control_speed_program, Key}).
+rod_control_speed_program(SimId, Terr_F) ->
+    gen_server:call(?SERVER(SimId), {get, rod_control_speed_program, [Terr_F]}).
 
 %%-------------------------------------------------------------------
 %% @doc Retreives requested value from PLS.
@@ -359,16 +359,14 @@ unit_test() ->
     SimId = 1,
     {ok, _} = es_curvebook_server:start_link(SimId, "priv/curvebook/"),
 
-    ?assertEqual({error, {cannot_interpolate_key, [b, 1500, 100]}}, power_defect(SimId, [b, 1500, 100])),
-    ?assertEqual({error, {cannot_interpolate_key, [b, 100]}}, power_defect(SimId, [100, b, 100])),
-    ?assertEqual({error, {cannot_interpolate_key, [b]}}, power_defect(SimId, [100, 100, b])),
+    ?assertEqual({error, {cannot_interpolate_key, [b, 1500, 100]}}, power_defect(SimId, b, 1500, 100)),
+    ?assertEqual({error, {cannot_interpolate_key, [b, 100]}}, power_defect(SimId, 100, b, 100)),
+    ?assertEqual({error, {cannot_interpolate_key, [b]}}, power_defect(SimId, 100, 100, b)),
 
-    ?assertEqual({error, {key_to_long, [1]}}, power_defect(SimId, [1, 1, 1, 1])),
-
-    ?assertEqual(-2066.0, es_convert:round(power_defect(SimId, [10000, 1500, 100]), 2)),
-    ?assertEqual(-1434.73, es_convert:round(power_defect(SimId, [7000, 1500, 70]), 2)),
-    ?assertEqual(-833.76, es_convert:round(power_defect(SimId, [6000.7, 1555.2, 40.2]), 2)),
-    ?assertEqual(-2838.39, es_convert:round(power_defect(SimId, [1000.1, 1, 120]), 2)),
+    ?assertEqual(-2066.0, es_convert:round(power_defect(SimId, 10000, 1500, 100), 2)),
+    ?assertEqual(-1434.73, es_convert:round(power_defect(SimId, 7000, 1500, 70), 2)),
+    ?assertEqual(-833.76, es_convert:round(power_defect(SimId, 6000.7, 1555.2, 40.2), 2)),
+    ?assertEqual(-2838.39, es_convert:round(power_defect(SimId, 1000.1, 1, 120), 2)),
 
     ?assertEqual({error, {key_does_not_exist, whatever}}, pls(SimId, whatever)),
 

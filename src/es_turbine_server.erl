@@ -131,8 +131,8 @@ handle_call({set, rate, _Rate}, _From, State) when State#turbine_state.go =:= tr
 handle_call({get, tref}, _From, State) -> 
    Power = State#turbine_state.power,
    SimId = State#turbine_state.simid,
-   No_load_Tavg = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [no_load_tavg]}),
-   Full_power_Tavg = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [full_power_tavg]}),
+   No_load_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
+   Full_power_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
    Tref = No_load_Tavg + (Full_power_Tavg - No_load_Tavg) * (Power / 100),
    {reply, Tref, State};
 

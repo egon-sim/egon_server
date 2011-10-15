@@ -77,9 +77,9 @@ set_mode(SimId, Mode) ->
 
 init([SimId]) -> 
     ok = es_clock_server:add_listener(SimId, ?SERVER(SimId)),
-    Manual_speed = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [speed_of_rods_in_manual]}),
-    Dead_band = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [rod_control_dead_band]}),
-    Lock_up = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [rod_control_lock_up]}),
+    Manual_speed = es_curvebook_server:pls(SimId, speed_of_rods_in_manual),
+    Dead_band = es_curvebook_server:pls(SimId, rod_control_dead_band),
+    Lock_up = es_curvebook_server:pls(SimId, rod_control_lock_up),
     {ok, #rod_controller_state{simid = SimId, mode=manual, speed=Manual_speed, in_lockup=no, manual_speed = Manual_speed, dead_band = Dead_band, lock_up = Lock_up, ticks_left = 0}}.
 
 handle_call({get, speed}, _From, State) ->
@@ -217,7 +217,7 @@ rod_speed(SimId, Terr, In_lockup) ->
     end.
 
 rod_control_program(SimId, Terr_F) ->
-    gen_server:call({global, {SimId, es_curvebook_server}}, {get, rod_control_speed_program, [Terr_F]}).
+    es_curvebook_server:rod_control_speed_program(SimId, Terr_F).
 
 step(State, Speed) ->
     SimId = State#rod_controller_state.simid,

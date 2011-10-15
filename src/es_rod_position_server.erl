@@ -185,10 +185,10 @@ integral_worth(SimId, Burnup, Flux) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    Control_rod_stops = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [control_rod_stops]}),
-    Overlap = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [overlap]}),
-    No_of_shutdown_groups = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_number]}),
-    Shutdown_rod_length = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [shutdown_rod_length]}),
+    Control_rod_stops = es_curvebook_server:pls(SimId, control_rod_stops),
+    Overlap = es_curvebook_server:pls(SimId, overlap),
+    No_of_shutdown_groups = es_curvebook_server:pls(SimId, shutdown_rod_number),
+    Shutdown_rod_length = es_curvebook_server:pls(SimId, shutdown_rod_length),
 
     {ok, #rod_position_state{simid = SimId, control_rod_stops = Control_rod_stops, overlap = Overlap, no_of_shutdown_groups = No_of_shutdown_groups, shutdown_rod_length = Shutdown_rod_length}}.
 
@@ -237,7 +237,7 @@ handle_call({action, step_out}, _From, State) ->
 handle_call({get, integral_worth, [Burnup, _Flux]}, _From, State) ->
     Counter = State#rod_position_state.control_position_counter,
     SimId = State#rod_position_state.simid,
-    Worth = gen_server:call({global, {SimId, es_curvebook_server}}, {get, rod_worth, [Burnup, Counter]}),
+    Worth = es_curvebook_server:rod_worth(SimId, Burnup, Counter),
     {reply, Worth, State};
 
 handle_call(stop, _From, Tab) ->
