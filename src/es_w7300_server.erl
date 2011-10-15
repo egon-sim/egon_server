@@ -12,8 +12,8 @@ init([SimId]) -> {ok, #w7300_state{simid = SimId}}.
 handle_call({get, tref}, _From, State) -> %TODO: move constants to config file/ETS table
    SimId = State#w7300_state.simid,
    Power = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
-   Noload_Tavg = 291.8,
-   Fullpower_Tavg = 305.0,
+   Noload_Tavg = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [no_load_tavg]}),
+   Fullpower_Tavg = gen_server:call({global, {SimId, es_curvebook_server}}, {get, pls, [full_power_tavg]}),
    Tref = Noload_Tavg + (Fullpower_Tavg - Noload_Tavg) * (Power / 100),
    {reply, Tref, State};
 

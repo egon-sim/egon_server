@@ -15,6 +15,7 @@ FOR PARTICULAR MODULE:
 * es_connection_server:sim_info implement with with handle_call
 * es_simulator_tracker_server:sim_clients implement with with handle_call
 * es_rod_position_server: replace "handle_call({set, " with "handle_cast({set, "
+* es_makeup_buffer_server: remove hardcoded constants from {action, borate, _} and {action, dilute, _}
 
 BACKLOG (x = DONE):
 [ ] egon_client.erl
