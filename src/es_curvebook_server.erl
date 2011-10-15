@@ -4,7 +4,7 @@
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
 -export([start_link/1, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, pls}).
+-record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, rod_control_speed_program, pls}).
 -compile(export_all).
 
 start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
@@ -16,8 +16,8 @@ stop_link(SimId) ->
 
 init([SimId]) -> 
     case fill_curvebook() of
-        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} ->
-            {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}};
+        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Rod_control_speed_program, Pls} ->
+            {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, rod_control_speed_program = Rod_control_speed_program, pls = Pls}};
         {error, application_undefined} ->
 	    error_logger:info_report(["Curvebook server started with undefined application."]),
             {error, application_undefined};
@@ -27,8 +27,8 @@ init([SimId]) ->
 
 init([SimId, Dir]) -> 
     case fill_curvebook(Dir) of
-        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls} ->
-            {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, pls = Pls}};
+        {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Rod_control_speed_program, Pls} ->
+            {ok, #curvebook_state{simid = SimId, power_defect = Power_defect, boron_worth = Boron_worth, mtc = MTC, critical_boron = Critical_boron, rod_worth = Rod_worth, rod_control_speed_program = Rod_control_speed_program, pls = Pls}};
         {error, _} ->
             {error}
     end.
@@ -47,6 +47,9 @@ handle_call({get, critical_boron, Key}, _From, State) ->
 
 handle_call({get, rod_worth, Key}, _From, State) ->
     {reply, lookup(State#curvebook_state.rod_worth, Key), State};
+
+handle_call({get, rod_control_speed_program, Key}, _From, State) ->
+    {reply, lookup(State#curvebook_state.rod_control_speed_program, Key), State};
 
 handle_call({get, pls, Key}, _From, State) ->
     {reply, lookup(State#curvebook_state.pls, Key), State};
@@ -81,12 +84,13 @@ fill_curvebook(Dir) ->
 	    MTC = fill_table(Dir ++ "MTC.ets"),
    	    Critical_boron = fill_table(Dir ++ "critical_boron.ets"),
    	    Rod_worth = fill_table(Dir ++ "rod_worth.ets"),
+	    Rod_control_speed_program = fill_table(Dir ++ "rod_control_speed_program.ets"),
    	    Pls = fill_pls(Dir ++ "pls.ets"),
-	    Tables = [Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls],
+	    Tables = [Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Rod_control_speed_program, Pls],
 	    Tables_OK = lists:all(fun(T) -> is_list(T) end, Tables),
 	    if 
 	        Tables_OK ->
-   	            {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Pls};
+   	            {Power_defect, Boron_worth, MTC, Critical_boron, Rod_worth, Rod_control_speed_program, Pls};
 	     	true ->
 	            {error, corrupt_curvebook}
 	    end;

@@ -132,6 +132,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% Internal functions
 %%%==================================================================
 rod_speed(State) ->
+    SimId = State#rod_controller_state.simid,
     Dead_band = State#rod_controller_state.dead_band,
     Lock_up = State#rod_controller_state.lock_up,
 
@@ -141,7 +142,7 @@ rod_speed(State) ->
 
     New_in_lockup = in_lockup(Dead_band, Lock_up, In_lockup, Terr, Old_speed),
 
-    {New_in_lockup, rod_speed(Terr, New_in_lockup)}.
+    {New_in_lockup, rod_speed(SimId, Terr, New_in_lockup)}.
 
 in_lockup(Dead_band, Lock_up, hi, Terr, _) ->
     Upper_hi_limit = Dead_band,
@@ -200,44 +201,23 @@ in_lockup(Dead_band, Lock_up, no, Terr, Old_speed) ->
 	    no
     end.
 
-rod_speed(Terr, In_lockup) ->
+rod_speed(SimId, Terr, In_lockup) ->
     Terr_F = es_convert:c2f_delta(Terr),
 %    io:format("~w ~w ~w~n", [Terr_F, Terr, In_lockup]),
 
-    Speed = rod_control_program(Terr_F),
+    Speed = rod_control_program(SimId, Terr_F),
 
     if
         (In_lockup =:= lo) and (Terr < 0) ->
-	    0;
+	    0.0;
         (In_lockup =:= hi) and (Terr > 0) ->
-	    0;
+	    0.0;
 	true ->
 	    Speed
     end.
 
-rod_control_program(Terr_F) ->
-    if
-        Terr_F < -5 ->
-	    Speed = -72;
-        Terr_F =< -3 ->
-	    Speed = 32 * Terr_F + 88;
-        Terr_F =< -1.5 ->
-	    Speed = -8;
-        Terr_F =< -1 ->
-	    Speed = -8;
-        Terr_F =< 1 ->
-	    Speed = 0;
-        Terr_F =< 1.5 ->
-	    Speed = 8;
-        Terr_F =< 3 ->
-	    Speed = 8;
-        Terr_F =< 5 ->
-	    Speed = 32 * Terr_F - 88;
-        Terr_F > 5 ->
-	    Speed = 72
-   end,
-   Speed.
-
+rod_control_program(SimId, Terr_F) ->
+    gen_server:call({global, {SimId, es_curvebook_server}}, {get, rod_control_speed_program, [Terr_F]}).
 
 step(State, Speed) ->
     SimId = State#rod_controller_state.simid,
@@ -303,27 +283,33 @@ in_lockup_test() ->
     ?assertEqual(hi, in_lockup(1.5, 0.5, hi, 0.7, 1)),
     ?assertEqual(no, in_lockup(1.5, 0.5, hi, 1, 0)),
     ?assertEqual(no, in_lockup(1.5, 0.5, hi, 1, 8)),
+
     ok.
 
 rod_speed_test() ->
-    ?assertEqual(-72, rod_speed(-3, no)),
-    ?assertEqual(-56.0, rod_speed(-2.5, no)),
-    ?assertEqual(-27.2, es_convert:round(rod_speed(-2, no), 2)),
-    ?assertEqual(-8, rod_speed(-1.5, no)),
-    ?assertEqual(-8, rod_speed(-1, no)),
-    ?assertEqual(-8, rod_speed(-0.7, no)),
-    ?assertEqual(0, rod_speed(-0.7, lo)),
-    ?assertEqual(-8, rod_speed(-0.7, hi)),
-    ?assertEqual(0, rod_speed(-0.5, no)),
-    ?assertEqual(0, rod_speed(0, no)),
-    ?assertEqual(0, rod_speed(0.5, no)),
-    ?assertEqual(8, rod_speed(0.7, no)),
-    ?assertEqual(8, rod_speed(0.7, lo)),
-    ?assertEqual(0, rod_speed(0.7, hi)),
-    ?assertEqual(8, rod_speed(1, no)),
-    ?assertEqual(27.2, es_convert:round(rod_speed(2, no), 2)),
-    ?assertEqual(56.0, rod_speed(2.5, no)),
-    ?assertEqual(72, rod_speed(3, no)),
+    SimId = 1,
+    {ok, _} = es_curvebook_server:start_link(SimId, "priv/curvebook/"),
+
+    ?assertEqual(-72.0, rod_speed(SimId, -3, no)),
+    ?assertEqual(-56.0, rod_speed(SimId, -2.5, no)),
+    ?assertEqual(-27.2, es_convert:round(rod_speed(SimId, -2, no), 2)),
+    ?assertEqual(-8.0, rod_speed(SimId, -1.5, no)),
+    ?assertEqual(-8.0, rod_speed(SimId, -1, no)),
+    ?assertEqual(-8.0, rod_speed(SimId, -0.7, no)),
+    ?assertEqual(0.0, rod_speed(SimId, -0.7, lo)),
+    ?assertEqual(-8.0, rod_speed(SimId, -0.7, hi)),
+    ?assertEqual(0.0, rod_speed(SimId, -0.5, no)),
+    ?assertEqual(0.0, rod_speed(SimId, 0, no)),
+    ?assertEqual(0.0, rod_speed(SimId, 0.5, no)),
+    ?assertEqual(8.0, rod_speed(SimId, 0.7, no)),
+    ?assertEqual(8.0, rod_speed(SimId, 0.7, lo)),
+    ?assertEqual(0.0, rod_speed(SimId, 0.7, hi)),
+    ?assertEqual(8.0, rod_speed(SimId, 1, no)),
+    ?assertEqual(27.2, es_convert:round(rod_speed(SimId, 2, no), 2)),
+    ?assertEqual(56.0, rod_speed(SimId, 2.5, no)),
+    ?assertEqual(72.0, rod_speed(SimId, 3, no)),
+
+    ?assertEqual(stopped, es_curvebook_server:stop_link(SimId)),
     ok.
 
 unit_test() -> 
@@ -334,7 +320,7 @@ unit_test() ->
     {ok, _} = start_link(SimId),
 
     ?assertEqual(manual, mode(SimId)),
-    ?assertEqual(48, speed(SimId)),
+    ?assertEqual(48.0, speed(SimId)),
 
     ?assertEqual(stopped, stop_link(SimId)),
     ?assertEqual(stopped, es_curvebook_server:stop_link(SimId)),
@@ -351,19 +337,19 @@ integration_test_() -> {timeout, 10, [fun () ->
     ?assertEqual(ok, egon_server:run(SimId)),
 
     ?assertEqual(manual, mode(SimId)),
-    ?assertEqual(48, speed(SimId)),
+    ?assertEqual(48.0, speed(SimId)),
 
     ?assertEqual(ok, es_rod_position_server:set_control_position_str(SimId, "D200")),
 
     ?assertEqual(ok, set_mode(SimId, auto)),
 
     ?assertEqual(auto, mode(SimId)),
-    ?assertEqual(72, speed(SimId)),
+    ?assertEqual(72.0, speed(SimId)),
 
     timer:sleep(1500),
 
     ?assertEqual(auto, mode(SimId)),
-    ?assertEqual(72, speed(SimId)),
+    ?assertEqual(72.0, speed(SimId)),
     ?assertEqual(585, es_rod_position_server:control_position_counter(SimId)),
 
     timer:sleep(4000),
