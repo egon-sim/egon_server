@@ -76,17 +76,17 @@ handle_call({add_listener, Listener}, _From, State) ->
 handle_call({rem_listener, Listener}, _From, State) ->
     {reply, ok, rem_listener(Listener, State)};
 
-handle_call({start_ticking}, _From, State) when State#clock_state.cycle_len =/= none ->
+handle_call({action, ticking, start}, _From, State) when State#clock_state.cycle_len =/= none ->
     Cycle_len = State#clock_state.cycle_len,
     SimId = State#clock_state.simid,
     {ok, Timer} = timer:apply_interval(Cycle_len, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
     timer:start(),
     {reply, ok, State#clock_state{timer=Timer, status=running}};
 
-handle_call({start_ticking}, _From, State) when State#clock_state.cycle_len =:= none ->
+handle_call({action, ticking, start}, _From, State) when State#clock_state.cycle_len =:= none ->
     {reply, error_cycle_len_not_set, State};
 
-handle_call({stop_ticking}, _From, State) ->
+handle_call({action, ticking, stop}, _From, State) ->
     timer:cancel(State#clock_state.timer),
     {reply, ok, State#clock_state{timer=none, status=stopped}};
 

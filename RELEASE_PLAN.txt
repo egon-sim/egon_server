@@ -1,2 +1,1 @@
 %- es_curvebook_server should return sane errors instead of dumping whole table onto the screen
-%- rename es_clock_server:handle_call({start_ticking}); to es_clock_server:handle_call({action, start_ticking}); and es_clock_server:handle_call({stop_ticking}); to es_clock_server:handle_call({action, stop_ticking});

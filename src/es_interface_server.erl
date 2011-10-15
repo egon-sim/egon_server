@@ -46,11 +46,6 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-call(#interface_state{simid = SimId}, {action, es_clock_server, start}) ->
-    gen_server:call({global, {SimId, es_clock_server}}, {start_ticking});
-call(#interface_state{simid = SimId}, {action, es_clock_server, stop}) ->
-    gen_server:call({global, {SimId, es_clock_server}}, {stop_ticking});
-
 call(#interface_state{simid = SimId}, {get, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {get, Param});
 call(#interface_state{simid = SimId}, {get, Server, Param, Args}) ->
