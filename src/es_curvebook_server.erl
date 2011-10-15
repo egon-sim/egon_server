@@ -14,6 +14,13 @@
 -export([
 	start_link/1,
 	start_link/2,
+	power_defect/2,
+	boron_worth/2,
+	mtc/2,
+	critical_boron/2,
+	rod_worth/2,
+	rod_control_speed_program/2,
+	pls/2,
 	stop_link/1
 	]).
 
@@ -58,6 +65,69 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 start_link(SimId, Dir) ->
     gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId, Dir], []).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of power defect for given key.
+%%
+%% @spec power_defect(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+power_defect(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, power_defect, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of boron worth for given key.
+%%
+%% @spec boron_worth(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+boron_worth(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, boron_worth, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of MTC for given key.
+%%
+%% @spec mtc(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+mtc(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, mtc, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of critical boron concentration for given key.
+%%
+%% @spec critical_boron(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+critical_boron(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, critical_boron, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of rod worth for given key.
+%%
+%% @spec rod_worth(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+rod_worth(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, rod_worth, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives value of rod speed for given key.
+%%
+%% @spec rod_control_speed_program(SimId::integer(), Key::[float()]) -> float()
+%% @end
+%%-------------------------------------------------------------------
+rod_control_speed_program(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, rod_control_speed_program, Key}).
+
+%%-------------------------------------------------------------------
+%% @doc Retreives requested value from PLS.
+%%
+%% @spec pls(SimId::integer(), Key::atom()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+pls(SimId, Key) ->
+    gen_server:call(?SERVER(SimId), {get, pls, Key}).
 
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
@@ -111,7 +181,7 @@ handle_call({get, rod_control_speed_program, Key}, _From, State) ->
     {reply, lookup(State#curvebook_state.rod_control_speed_program, Key), State};
 
 handle_call({get, pls, Key}, _From, State) ->
-    {reply, lookup(State#curvebook_state.pls, Key), State};
+    {reply, match(State#curvebook_state.pls, Key), State};
 
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State}.
@@ -195,7 +265,8 @@ sort_table(Table) when is_list(Table) ->
 lookup(T, []) ->
 %   io:format("lookup: []~n"),
     T;
-lookup(Table, Key) ->
+
+lookup(Table, Key) when is_list(Table) ->
 %    io:format("lookup: ~p~n", [Key]),
     [Head|Rest] = Key,
     case lists:keymember(Head, 1, Table) of
@@ -204,6 +275,19 @@ lookup(Table, Key) ->
 	    lookup(Val, Rest);
         false ->
             interpolate(Table, Key)
+    end;
+
+lookup(_Table, Key) ->
+    {error, {key_to_long, Key}}.
+
+match(Table, Key) ->
+%    io:format("lookup: ~p~n", [Key]),
+    case lists:keymember(Key, 1, Table) of
+        true ->
+            {value, {_, Val}} = lists:keysearch(Key, 1, Table),
+	    Val;
+        false ->
+            {error, {key_does_not_exist, Key}}
     end.
 
 interpolate(Table, Key) ->
@@ -217,6 +301,8 @@ interpolate(Table, Key, Start, End) ->
 %    io:format("start-end: ~p~n", [{Start, Middle, End}]),
 %    io:format("heads: ~p~n", [{Head, New_head}]),
     if
+	not is_number(Head) ->
+	    {error, {cannot_interpolate_key, Key}};
         Start == End ->
             Val;
         Start + 1 == End ->
@@ -236,7 +322,25 @@ calculate(Table, Key, Lo, Hi) ->
     Val_Hi = lookup(Rest_Hi, Rest),
 %    io:format("head: ~p~n", [{Head_Lo, Head_Hi}]),
 %    io:format("calculate: ~p~n", [{Val_Lo, Val_Hi}]),
+
+    Error =
+    case Val_Lo of
+        {error, _} ->
+	    Val_Lo;
+	_ ->
+	    case Val_Hi of
+                {error, _} ->
+	    	    Val_Hi;
+		_ ->
+		    none
+            end
+    end,
+
     if
+	not is_number(Head) ->
+	    {error, {cannot_interpolate_key, Key}};
+	Error =/= none ->
+	    Error;
         is_number(Val_Lo) and is_number(Val_Hi) ->
             Ratio = (Head - Head_Lo) / (Head_Hi - Head_Lo),
 	    Val = Ratio * (Val_Hi - Val_Lo) + Val_Lo,
@@ -252,6 +356,25 @@ calculate(Table, Key, Lo, Hi) ->
 -include_lib("eunit/include/eunit.hrl").
 
 unit_test() ->
+    SimId = 1,
+    {ok, _} = es_curvebook_server:start_link(SimId, "priv/curvebook/"),
+
+    ?assertEqual({error, {cannot_interpolate_key, [b, 1500, 100]}}, power_defect(SimId, [b, 1500, 100])),
+    ?assertEqual({error, {cannot_interpolate_key, [b, 100]}}, power_defect(SimId, [100, b, 100])),
+    ?assertEqual({error, {cannot_interpolate_key, [b]}}, power_defect(SimId, [100, 100, b])),
+
+    ?assertEqual({error, {key_to_long, [1]}}, power_defect(SimId, [1, 1, 1, 1])),
+
+    ?assertEqual(-2066.0, es_convert:round(power_defect(SimId, [10000, 1500, 100]), 2)),
+    ?assertEqual(-1434.73, es_convert:round(power_defect(SimId, [7000, 1500, 70]), 2)),
+    ?assertEqual(-833.76, es_convert:round(power_defect(SimId, [6000.7, 1555.2, 40.2]), 2)),
+    ?assertEqual(-2838.39, es_convert:round(power_defect(SimId, [1000.1, 1, 120]), 2)),
+
+    ?assertEqual({error, {key_does_not_exist, whatever}}, pls(SimId, whatever)),
+
+    ?assertEqual(305.0, pls(SimId, full_power_tavg)),
+
+    ?assertEqual(stopped, es_curvebook_server:stop_link(SimId)),
     ok.
 
 integration_test() ->
