@@ -1,18 +1,77 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server providing access to core design and other files
+%%%      defining model of the power plant.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_curvebook_server).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
--export([start_link/1, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(curvebook_state, {simid, power_defect, boron_worth, mtc, critical_boron, rod_worth, rod_control_speed_program, pls}).
--compile(export_all).
+% API
+-export([
+	start_link/1,
+	start_link/2,
+	stop_link/1
+	]).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-start_link(SimId, Dir) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId, Dir], []).
+% data structures
+-record(curvebook_state, {
+			 simid,
+			 power_defect,
+			 boron_worth,
+			 mtc,
+			 critical_boron,
+			 rod_worth,
+			 rod_control_speed_program,
+			 pls
+			 }).
 
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server for testing purposes.
+%%
+%% @spec start_link(SimId::integer(), Dir::string()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId, Dir) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId, Dir], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
 stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
     case fill_curvebook() of
@@ -63,7 +122,10 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
 
 fill_curvebook() ->
     case application:get_application() of
@@ -182,3 +244,15 @@ calculate(Table, Key, Lo, Hi) ->
         true ->
             {error, value_not_number}
     end.
+
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() ->
+    ok.
+
+integration_test() ->
+    ok.
