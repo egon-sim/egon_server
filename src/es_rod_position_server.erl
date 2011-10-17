@@ -17,6 +17,7 @@
 	 control_position_counter/1,
 	 set_control_position_counter/2,
 	 control_position/1,
+	 control_position_array_str/1,
 	 set_control_position_str/2,
 	 control_position/2,
 	 shutdown_position_counter/1,
@@ -94,6 +95,16 @@ set_control_position_counter(SimId, Val) ->
 %%-------------------------------------------------------------------
 control_position(SimId) ->
     gen_server:call(?SERVER(SimId), {get, control_position}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns value of control rod group positions as a string
+%%      containing an array.
+%%
+%% @spec control_position_array_str(SimId::integer()) -> [integer()]
+%% @end
+%%-------------------------------------------------------------------
+control_position_array_str(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, control_position_array_str}).
 
 %%-------------------------------------------------------------------
 %% @doc Sets value of control rod position as an string.
@@ -197,6 +208,9 @@ handle_call({get, control_position_counter}, _From, State) ->
 
 handle_call({get, control_position}, _From, State) ->
     {reply, State#rod_position_state.control_group_position, State};
+
+handle_call({get, control_position_array_str}, _From, State) ->
+    {reply, list_to_list(State#rod_position_state.control_group_position), State};
 
 handle_call({get, control_position, Group}, _From, State) ->
     {reply, lists:nth(Group, State#rod_position_state.control_group_position), State};
@@ -310,7 +324,15 @@ position_to_counter([Letter|Number], Control_rod_stops, Last_overlap, Overlap, C
 	    Start_of_overlap - Last_overlap + position_to_counter([Letter|Number], tl(Control_rod_stops), Start_of_overlap, Overlap, Current_group + 1);
 	true ->
 	    error
-    end.	
+    end.
+
+list_to_list(List) ->
+    "[" ++ list_to_list_1(List).
+
+list_to_list_1([Head]) ->
+    integer_to_list(Head) ++ "]";
+list_to_list_1([Head|Rest]) ->
+    integer_to_list(Head) ++ "," ++ list_to_list_1(Rest).
 
 %%%==================================================================
 %%% Test functions
@@ -327,8 +349,10 @@ unit_test() ->
     ?assertEqual(612, control_position_counter(SimId)),
     ?assertEqual(full_out, step_out(SimId)),
     ?assertEqual([228, 228, 228, 228], control_position(SimId)),
+    ?assertEqual("[228,228,228,228]", control_position_array_str(SimId)),
     ?assertEqual(ok, step_in(SimId)),
     ?assertEqual([228, 228, 228, 227], control_position(SimId)),
+    ?assertEqual("[228,228,228,227]", control_position_array_str(SimId)),
     ?assertEqual(ok, step_out(SimId)),
     ?assertEqual([228, 228, 228, 228], control_position(SimId)),
 
@@ -342,6 +366,7 @@ unit_test() ->
     ?assertEqual([50, 0, 0, 0], control_position(SimId)),
     ?assertEqual(ok, set_control_position_str(SimId, "B50")),
     ?assertEqual([178, 50, 0, 0], control_position(SimId)),
+    ?assertEqual("[178,50,0,0]", control_position_array_str(SimId)),
     ?assertEqual(ok, set_control_position_str(SimId, "C50")),
     ?assertEqual([228, 178, 50, 0], control_position(SimId)),
     ?assertEqual(228, control_position(SimId, 1)),
