@@ -1,0 +1,1 @@
+eunit:test([es_tests],[{report,{eunit_surefire,[{dir,"."}]}}]).
