@@ -34,7 +34,6 @@ Userfriendlyness:
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
 %0 move io:format to error_handler:info_report
-#0 es_simulator_tracker_server should reuse old free SimIds when starting new simulator
 #0 integrate ramper into turbine
 
 MAJOR FEATURES ROADMAP:

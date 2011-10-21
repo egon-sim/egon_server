@@ -12,6 +12,7 @@ init([]) ->
     {ok, #tracker_state{simulators = [], next_id = 1}}.
 
 handle_call({start_simulator, [Name, Desc, User]}, _From, State) -> 
+%% State#tracker_state.next_id should never be reused, SimId should be unique for every simulator instance
     Sims = State#tracker_state.simulators,
     SimId = State#tracker_state.next_id,
     case es_simulator_dispatcher:start_child(SimId) of
