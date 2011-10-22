@@ -29,7 +29,6 @@ Erlang/OTP problem:
 
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
-#0 building a release (OTP in Action, chapter 10)
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
