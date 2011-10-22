@@ -1,0 +1,1 @@
+erts-5.7.4\bin\erl -sname egon_server -boot egon_server -detached
