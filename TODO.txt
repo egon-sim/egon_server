@@ -30,6 +30,10 @@ Erlang/OTP problem:
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
 
+Releasing:
+#+ splitting egon_server into two applications: single-simulator (for single-user version of EGON) and server handling multiple instances of this single-simulator (for multiple user version of EGON)
+#- implement es_releasing:delete/1.
+
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
 %0 move io:format to error_handler:info_report
