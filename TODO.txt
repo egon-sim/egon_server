@@ -33,7 +33,6 @@ Userfriendlyness:
 Releasing:
 #+ splitting egon_server into two applications: single-simulator (for single-user version of EGON) and server handling multiple instances of this single-simulator (for multiple user version of EGON)
 %+ es_releasing:generate_release/0 should remove erl.ini, install.bat should generate new erl.ini
-*- stopping the system, perfoming cleanup
 
 Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
