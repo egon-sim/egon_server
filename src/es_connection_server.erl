@@ -63,6 +63,8 @@ call(_State, {ask, list_sims}) ->
     list_sims();
 call(_State, {stop_sim, SimId}) ->
     gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId});
+call(_State, {shutdown_server}) ->
+    gen_server:call({global, es_master_server}, {shutdown});
 call(_State, Req) ->
     {unknown_request, Req}.
 

@@ -8,6 +8,9 @@ start() ->
 stop() ->
     application:stop(egon_server).
 
+shutdown() ->
+    gen_server:call({global, es_master_server}, {shutdown}).
+
 restart() ->
     stop(),
     start().

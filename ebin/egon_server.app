@@ -18,6 +18,7 @@
       es_lib_tcp,
       es_log_server, 
       es_makeup_buffer_server, 
+      es_master_server, 
       es_primary_sup,
       es_ramper_server,
       es_rod_controller_server,

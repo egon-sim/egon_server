@@ -21,6 +21,7 @@
 	stop_sim/1,
 	conn_to_sim/1,
 	disconnect/0,
+	shutdown_server/0,
 	call/1,
 	sim_info/0,
 	sim_info/1,
@@ -110,6 +111,15 @@ conn_to_sim(SimId) ->
 %%-------------------------------------------------------------------
 disconnect() ->
     gen_server:call(?MODULE, {disconnect}).
+
+%%-------------------------------------------------------------------
+%% @doc Shuts egon_server system down.
+%%
+%% @spec shutdown_server() -> ok
+%% @end
+%%-------------------------------------------------------------------
+shutdown_server() ->
+    gen_server:call(?MODULE, {shutdown_server}).
 
 %%-------------------------------------------------------------------
 %% @doc Sends an arbitrary message to egon_server.
@@ -240,29 +250,27 @@ handle_call({connect_to, PortNo}, _From, State) ->
     {reply, ok, State#client_state{simulator_sock = New_sock}};
 
 handle_call({disconnect}, _From, State) -> 
+    {Answer, New_state} = disconnect_sim(State),
+    {reply, Answer, New_state};
+
+handle_call({shutdown_server}, _From, State) -> 
+    {_Answer, New_state} = disconnect_sim(State),
     if
-        State#client_state.simulator_sock =:= undefined ->
-	    {reply, not_connected, State};
+        New_state#client_state.server_sock =:= undefined ->
+	    {reply, not_connected, New_state};
 	true ->
-	    Sock = State#client_state.simulator_sock,
-    	    gen_tcp:close(Sock),
-    	    {reply, ok, State#client_state{simulator_sock = undefined}}
+       	    send("{shutdown_server}", New_state),
+       	    {Answer, Final_state} = disconnect_serv(New_state),
+    	    {reply, Answer, Final_state}
     end;
 
 handle_call({get, username}, _From, State) -> 
     {reply, State#client_state.username, State};
 
 handle_call(stop, _From, State) -> 
-    Sock = State#client_state.server_sock,
-    gen_tcp:close(Sock),
-    Sock1 = State#client_state.simulator_sock,
-    if
-        Sock1 =/= undefined ->
-    	    gen_tcp:close(Sock1);
-	true ->
-	    ok
-    end,
-    {stop, normal, stopped, State}.
+    {_, New_state} = disconnect_sim(State),
+    {_, Final_state} = disconnect_serv(New_state),
+    {stop, normal, stopped, Final_state}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
 handle_cast(_Msg, State) -> {noreply, State}.
@@ -295,6 +303,26 @@ send(Message, State) ->
 %    {match, [B]} = re:run(A, "^([^\\n]+)\\R*$", [{capture, [1], list}]),
 %    {match, [B]} = re:run(A, "^( .+)$", [{capture, [1], list}]),
     A.
+
+disconnect_sim(State) ->
+    if
+        State#client_state.simulator_sock =:= undefined ->
+	    {not_connected, State};
+	true ->
+	    Sock = State#client_state.simulator_sock,
+    	    gen_tcp:close(Sock),
+    	    {ok, State#client_state{simulator_sock = undefined}}
+    end.
+disconnect_serv(State) ->
+    if
+        State#client_state.server_sock =:= undefined ->
+	    {not_connected, State};
+	true ->
+	    Sock = State#client_state.server_sock,
+    	    gen_tcp:close(Sock),
+    	    {ok, State#client_state{server_sock = undefined}}
+    end.
+
 
     
 %%%==================================================================

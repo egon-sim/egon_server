@@ -15,6 +15,9 @@ start_link() ->
    supervisor:start_link({local, ?SERVER}, ?MODULE, [Port]).
 
 init([Port]) ->
+   Master = {es_master_server, {es_master_server, start_link, []},
+      permanent, 2000, worker, [es_master_server]},
+   
    Connection = {es_connection_server, {es_connection_server, start_link, [Port]},
       permanent, 2000, worker, [es_connection_server]},
    
@@ -25,6 +28,6 @@ init([Port]) ->
       permanent, 2000, supervisor, [es_simulator_dispatcher]},
    
    
-   Children = [Connection, Tracker, Simulator_dispatcher],
+   Children = [Master, Connection, Tracker, Simulator_dispatcher],
    RestartStrategy = {one_for_one, 1, 2},
    {ok, {RestartStrategy, Children}}.
