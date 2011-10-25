@@ -45,11 +45,17 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 set_up_defaults(State) ->
-    {ok, Priv} = application:get_env(egon_server, priv),
-    {ok, Snapshots} = application:get_env(egon_server, snapshots),
-    {ok, Snapshot} = application:get_env(egon_server, default_snapshot),
-    load_snapshot(State, Priv ++ Snapshots ++ Snapshot),
-    ok.
+    case application:get_application() of
+        {ok, App} ->
+	    Priv = code:priv_dir(App),
+	    {ok, Snapshots} = application:get_env(App, snapshots),
+    	    {ok, Snapshot} = application:get_env(App, default_snapshot),
+    	    load_snapshot(State, Priv ++ Snapshots ++ Snapshot),
+    	    ok;
+	undefined ->
+	    {error, application_undefined}
+    end.
+
 
 load_snapshot(#config_state{simid = SimId}, Path) ->
     Is_file = filelib:is_regular(Path),

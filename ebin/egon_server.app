@@ -40,7 +40,6 @@
    {mod, {es_app, []}},
    {env, [
           {port, 1055},
-	  {priv, "priv/"},
 	  {curvebook, "curvebook/"},
 	  {snapshots, "snapshots/"},
 	  {default_snapshot, "full_power.snapshot"}
