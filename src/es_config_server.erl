@@ -47,7 +47,9 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 set_up_defaults(State) ->
     case application:get_application() of
         {ok, App} ->
-	    Priv = code:priv_dir(App),
+%	    Priv = code:priv_dir(App),
+	    {ok, Cwd} = file:get_cwd(),
+	    Priv = Cwd ++ "/" ++ "priv/",
 	    {ok, Snapshots} = application:get_env(App, snapshots),
     	    {ok, Snapshot} = application:get_env(App, default_snapshot),
     	    load_snapshot(State, Priv ++ Snapshots ++ Snapshot),

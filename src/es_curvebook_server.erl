@@ -200,7 +200,9 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 fill_curvebook() ->
     case application:get_application() of
         {ok, App} ->
-	    Priv = code:priv_dir(App),
+%	    Priv = code:priv_dir(App),
+	    {ok, Cwd} = file:get_cwd(),
+	    Priv = Cwd ++ "/" ++ "priv/",
     	    {ok, Curvebook} = application:get_env(App, curvebook),
     	    fill_curvebook(Priv ++ Curvebook);
 	undefined ->
