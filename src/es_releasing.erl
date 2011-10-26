@@ -2,16 +2,21 @@
 -export([create_release/0, clear_files/0]).
 
 create_release() ->
-    create_release("releases", "egon_server", "egon_server-0.1", "erts-5.6.4").
+    create_release("releases", "egon_server").
 
-create_release(Release_dir, Rel_file_name, Release_name, Erts) ->
+create_release(Release_dir, Rel_file_name) ->
     Full_name = Release_dir ++ "/" ++ Rel_file_name,
-    Full_release_name = Release_dir ++ "/" ++ Release_name,
+
+    {ok, [{release, {Rel_name, Rel_version}, {erts, Erts_version}, _Apps}]} = file:consult(Full_name ++ ".rel"),
+
+    Release_name = Rel_name ++ "-" ++ Rel_version,
+    Erts = "erts-" ++ Erts_version,
+
     code:add_patha("./ebin"),
     clear_files(Release_dir, Rel_file_name, Release_name),
     systools:make_script(Full_name, []),
     systools:make_tar(Full_name, [{erts, code:root_dir()}]),
-    erl_tar:extract(Full_name ++ ".tar.gz", [{cwd, Full_release_name}, compressed]),
+    erl_tar:extract(Full_name ++ ".tar.gz", [{cwd, Release_dir ++ "/" ++ Release_name}, compressed]),
     generate_ini(Release_dir, Release_name, Erts),
     generate_install(Release_dir, Release_name, Erts),
     generate_start(Release_dir, Rel_file_name, Release_name, Erts),
