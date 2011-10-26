@@ -8,6 +8,7 @@ Protocol:
 %+ more restrictive packet definition regexp in es_lib_tcp, with error recovery
 
 General features:
+*+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)
 *- es_clock_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *0 extract client code from egon_server
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
