@@ -8,3 +8,4 @@ logs/*
 compile.bat
 *.boot
 *.script
+*.lnk
