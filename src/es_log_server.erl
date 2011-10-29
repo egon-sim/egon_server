@@ -235,6 +235,11 @@ handle_call({action, start}, _From, State) ->
     timer:start(),
     {reply, ok, State#log_state{timer=Timer, status=running}};
 
+handle_call({action, add_parameter, {Name, Server, Call}}, _From, State) ->
+    SimId = State#log_state.simid,
+    add_parameter(SimId, {Name, {gen_server, call, [{global, {SimId, Server}}, Call]}}),
+    {reply, ok, State};
+
 handle_call({tick}, _From, State) when State#log_state.status =:= running ->
     New_state = log_parameters(State),
     {reply, ok, New_state};
