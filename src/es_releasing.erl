@@ -20,6 +20,7 @@ create_release(Release_dir, Rel_file_name) ->
     generate_ini(Release_dir, Release_name, Erts),
     generate_install(Release_dir, Release_name, Erts),
     generate_start(Release_dir, Rel_file_name, Release_name, Erts),
+    generate_start2(Release_dir, Rel_file_name, Release_name, Erts),
     copy_files(Release_dir, Rel_file_name, Release_name),
     cleanup(Release_dir, Rel_file_name, Release_name),
     ok.
@@ -37,7 +38,12 @@ generate_install(Release_dir, Release_name, Erts) ->
 
 generate_start(Release_dir, Rel_file_name, Release_name, Erts) ->
     Filename = Release_dir ++ "/" ++ Release_name ++ "/start.bat",
-    Content = Erts ++ "\\bin\\erl -sname " ++ Rel_file_name ++ " -boot " ++ Rel_file_name ++" -detached\n",
+    Content = Erts ++ "\\bin\\erl -sname " ++ Rel_file_name ++ " -boot " ++ Rel_file_name ++ " -detached\n",
+    file:write_file(Filename, Content).    
+
+generate_start2(Release_dir, Rel_file_name, Release_name, Erts) ->
+    Filename = Release_dir ++ "/" ++ Release_name ++ "/start2.bat",
+    Content = Erts ++ "\\bin\\erl -sname " ++ Rel_file_name ++ " -boot " ++ Rel_file_name ++ "\n",
     file:write_file(Filename, Content).    
 
 clear_files() ->
