@@ -52,6 +52,8 @@ call(#interface_state{simid = SimId}, {get, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {get, Param, Args});
 call(#interface_state{simid = SimId}, {set, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {set, Param, Args});
+call(#interface_state{simid = SimId}, {cast, Server, Param, Args}) ->
+    gen_server:cast({global, {SimId, Server}}, {set, Param, Args});
 call(#interface_state{simid = SimId}, {action, Server, Param}) ->
     gen_server:call({global, {SimId, Server}}, {action, Param});
 call(#interface_state{simid = SimId}, {action, Server, Param, Args}) ->
