@@ -202,6 +202,9 @@ stop_logging(SimId) ->
 init([SimId]) -> 
     {ok, #log_state{simid = SimId, timer=none, status=stopped, cycle_len=none, parameters=[], database=[]}}.
 
+handle_call({get, timestamp}, _From, State) ->
+    {reply, erlang:now(), State};
+
 handle_call({get, cycle_len}, _From, State) ->
     {reply, State#log_state.cycle_len, State};
 
