@@ -22,8 +22,10 @@
 	add_parameter/2,
 	add_parameters/2,
 	status/1,
+	timestamp/1,
 	database/1,
 	csv_dump/1,
+	range_dump/4,
 	start_logging/1,
 	stop_logging/1
 	]).
@@ -165,6 +167,34 @@ database(SimId) ->
     gen_server:call(?SERVER(SimId), {get, database}).
 
 %%-------------------------------------------------------------------
+%% @doc Returns timestamp of current moment
+%%
+%% @spec timestamp(SimId::integer()) -> {Megasec, Sec, Microsec}
+%% where
+%%  Megasec = integer()
+%%  Sec = integer()
+%%  Microsec = integer()
+%% @end
+%%-------------------------------------------------------------------
+timestamp(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, timestamp}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns all information from StartTimestamp, EndTimestamp
+%%      with timespan between points equal to Frequency
+%%
+%% @spec range(SimId, StartTimestamp, EndTimestamp, Frequency) -> 
+%% 	 [Points]
+%% where
+%%  Points = [Timestamp|[Values]]
+%%  Timestamp = {integer(), integer(), integer()}
+%%  Values = [term()]
+%% @end
+%%-------------------------------------------------------------------
+range_dump(SimId, StartTimestamp, EndTimestamp, Frequency) ->
+    gen_server:call(?SERVER(SimId), {get, range, {StartTimestamp, EndTimestamp, Frequency}}).
+
+%%-------------------------------------------------------------------
 %% @doc Returns all information collected up until now given in CSV
 %%      (comma separated value) form
 %%
@@ -216,6 +246,10 @@ handle_call({get, status}, _From, State) ->
 
 handle_call({get, database}, _From, State) ->
     {reply, lists:reverse(State#log_state.database), State};
+
+handle_call({get, range, {StartTimestamp, EndTimestamp, Frequency}}, _From, State) ->
+    Range = create_range(State#log_state.database, {StartTimestamp, EndTimestamp, Frequency}),
+    {reply, Range, State};
 
 handle_call({get, csv_dump}, _From, State) ->
     Database = lists:reverse(State#log_state.database),
@@ -345,7 +379,31 @@ create_csv_dump(Old_header, [Head|Rest], Acc) ->
 	true ->
 	    create_csv_dump(Header, Rest, [csv_entry(Head)|[csv_header(Head)|Acc]])
     end.
+
+create_range(Database, {StartTimestamp, EndTimestamp, Frequency}) ->
+    create_range([], Database, {StartTimestamp, EndTimestamp, Frequency}).
     
+create_range(Acc, [], _) ->
+    Acc;
+create_range(Acc, [Head|Rest], {StartTimestamp, EndTimestamp, Frequency}) ->
+    Done = compare_timestamp(StartTimestamp, EndTimestamp) > 0,
+    if
+        Done ->
+	    Acc;
+	true ->
+	    StartOK = (compare_timestamp(Head#log_entry.timestamp, StartTimestamp) >= 0),
+	    EndOK = (compare_timestamp(EndTimestamp, Head#log_entry.timestamp) >= 0),
+	    if
+	        StartOK and EndOK ->
+		    New_acc = [csv_entry(Head)|Acc],
+		    New_endTimestamp = dec_timestamp(Head#log_entry.timestamp, Frequency);
+	        true ->
+		    New_acc = Acc,
+		    New_endTimestamp = EndTimestamp
+	    end,
+    	    create_range(New_acc, Rest, {StartTimestamp, New_endTimestamp, Frequency})
+	end.
+
 get_header(Entry) ->
     get_header(Entry#log_entry.parameters, []).
 get_header([], Acc) ->
@@ -367,11 +425,59 @@ csv_entry([Head|Rest], Acc) ->
     csv_entry(Rest, [Value|Acc]).
     
 
+compare(Val1, Val2) ->
+    if
+        Val1 > Val2 ->
+	    1;
+        Val1 < Val2 ->
+	    -1;
+        Val1 =:= Val2 ->
+	    0;
+        true ->
+	    {error, values_not_comparable}
+    end.
+
+
+
+inc_timestamp({MegaSec, Sec, MicroSec}, SecInc) ->
+    New_microSec = MicroSec + trunc((SecInc - trunc(SecInc)) * 1000000),
+
+    New_sec = trunc(Sec + SecInc) rem 1000000,
+
+    New_megaSec = MegaSec + ((Sec + trunc(SecInc)) div 1000000),
+    {New_megaSec, New_sec, New_microSec}.
+
+dec_timestamp({MegaSec, Sec, MicroSec}, SecInc) ->
+    normalize_timestamp(inc_timestamp({MegaSec, Sec, MicroSec}, -SecInc)).
+
+normalize_timestamp({MegaSec, Sec, MicroSec}) when MicroSec < 0 ->
+    {MegaSec, Sec - 1, MicroSec + 1000000};
+normalize_timestamp({MegaSec, Sec, MicroSec}) when Sec < 0 ->
+    {MegaSec - 1, Sec + 1000000, MicroSec};
+normalize_timestamp(TimeStamp) ->
+    TimeStamp.
+
+compare_timestamp(Stamp, Stamp) ->
+    0;
+compare_timestamp({MegaSec, Sec, MicroSec1}, {MegaSec, Sec, MicroSec2}) ->
+    compare(MicroSec1, MicroSec2);
+compare_timestamp({MegaSec, Sec1, _}, {MegaSec, Sec2, _}) ->
+    compare(Sec1, Sec2);
+compare_timestamp({MegaSec1, _, _}, {MegaSec2, _, _}) ->
+    compare(MegaSec1, MegaSec2).
 
 %%%==================================================================
 %%% Test functions
 %%%==================================================================
 -include_lib("eunit/include/eunit.hrl").
+
+timestamp_test() ->
+    ?assertEqual({1, 3, 3}, inc_timestamp({1, 2, 3}, 1)),
+    ?assertEqual({1, 2, 3}, dec_timestamp({1, 3, 3}, 1)),
+    ?assertEqual({2, 2, 3}, inc_timestamp({1, 999999, 3}, 3)),
+    ?assertEqual({1, 999999, 3}, dec_timestamp({2, 2, 3}, 3)),
+    ok.
+
 
 unit_test() ->
     SimId = 1,
@@ -403,10 +509,18 @@ unit_test() ->
     ?assertEqual(stopped, status(SimId)),
     Database = database(SimId),
     ?assertEqual(5, length(Database)),
+
 %    ?assertEqual(#log_entry{parameters = [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}}, 
 %    #log_parameter{name = "Node", mfa = {erlang, node, []}}]}, lists:last(Database)),
+
 %    Retval = csv_dump(SimId),
 %    io:format("~p~n", [Retval]),
+
+    {Megasec, Sec, Microsec} = erlang:now(),
+
+    Retval = range_dump(SimId, {Megasec, Sec - 3, Microsec}, {Megasec, Sec, Microsec}, 1),
+    io:format("~p~n", [Retval]),
+
     ?assertEqual(stopped, stop_link(SimId)),
     ok.
 
