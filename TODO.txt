@@ -1,5 +1,4 @@
 BUGS:
-* es_connection_server:connect_to_simulator now returns {connected, [SimId, Port]} instead of {connected, Port} - see if this breaks anything
 #- fix egon_client:new_sim documentation (return values are broken)
 
 Protocol:
@@ -16,9 +15,6 @@ General features:
 #- implement es_log_server:get_time_range(SimId, StartTime, StopTime, Points) which will return list of values of Points in time range from StartTime to StopTime
 #0 changing simulation speed
 #- add logging to configuration file
-
-egon_client:
-$- xls generation
 
 Separating implementation and configuration:
 *- move set_up_defaults from es_config_server to egon_server
