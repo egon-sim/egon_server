@@ -69,8 +69,8 @@ stop_link() ->
 %%-------------------------------------------------------------------
 %% @doc Starts new simulator.
 %%
-%% @spec new_sim(Name::string(), Desc::string()) -> {connected,
-%%       Port} | {error_starting_child} | {unknown_error, Error}
+%% @spec new_sim(Name::string(), Desc::string()) -> {ok, SimId} |
+%%       {error, shutdown} | {unknown_error, Error}
 %% where
 %%  Port = integer(),
 %%  Error = term()

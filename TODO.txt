@@ -1,6 +1,3 @@
-BUGS:
-#- fix egon_client:new_sim documentation (return values are broken)
-
 Protocol:
 *- assemble by hand a list of messages which es_interface_server can send to other servers
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
