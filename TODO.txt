@@ -15,11 +15,6 @@ General features:
 #0 changing simulation speed
 #- add logging to configuration file
 
-Erlang/OTP problem:
-#? errors in snapshot file do not generate error report
-#? if two gen_tcp servers listen on the same port, they fail silently
-#? if supervisor fails to start it's children, no error is generated
-
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
 

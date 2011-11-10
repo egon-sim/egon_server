@@ -13,9 +13,8 @@ init([Port]) ->
     	    io:format("Connection server started normally.~n"),
 	    {ok, #connection_state{port = Port, lsock = LSock, buffer=[]}, 0};
 	{error, eaddrinuse} ->
-    	    io:format("Connection server unable to listen: port ~p is in use.~n", [Port]),
-    	    error_handler:error_report("Connection server unable to listen: port ~p is in use.~n", [Port]),
-	    {stop, eaddrinuse}
+    	    error_logger:error_report(["Connection server unable to listen: port in use.", {port, Port}]),
+	    {stop, {eaddrinuse, {port, Port}}}
     end.
 
 handle_info({tcp, Socket, RawData}, State) ->

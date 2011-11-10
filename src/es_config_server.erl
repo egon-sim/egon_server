@@ -62,7 +62,6 @@ load_snapshot(#config_state{simid = SimId}, Path) ->
     case Is_file of
         true ->
    	    {ok, [Snapshot]} = file:consult(Path),
-
    	    lists:foreach(
        	        fun({Server, Parm, Val}) ->
        	   	    gen_server:call({global, {SimId, Server}}, {set, Parm, Val})
@@ -70,6 +69,6 @@ load_snapshot(#config_state{simid = SimId}, Path) ->
             Snapshot),
 	    ok;
         false ->
-            io:format("Error: curvebook directory ~p does not exist.~n", [Path]),
-            {error, no_directory}
+            error_logger:info_report(["Error: snapshot file does not exist.~n", {snapshot_file, Path}]),
+            {error, {no_snapshot_file, Path}}
     end.
