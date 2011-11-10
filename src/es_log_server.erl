@@ -13,6 +13,7 @@
 
 % API
 -export([
+	params/0,
 	start_link/1,
 	stop_link/1,
 	cycle_len/1,
@@ -62,6 +63,18 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Returns list of available parameters.
+%%
+%% @spec params() -> [Param]
+%% where
+%%  Param = {Parameter_id, Function_name}
+%%  Parameter_id = term()
+%%  Function_name = term()
+%% @end
+%%-------------------------------------------------------------------
+params() -> [].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -248,7 +261,7 @@ stop_logging(SimId) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    {ok, #log_state{simid = SimId, timer=none, status=stopped, cycle_len=none, parameters=[], database=[]}}.
+    {ok, #log_state{simid = SimId, timer=none, status=stopped, cycle_len=none, parameters=[], database=[]}, 0}.
 
 handle_call({get, timestamp}, _From, State) ->
     {reply, erlang:now(), State};
@@ -344,9 +357,12 @@ handle_cast({action, stop}, State) ->
     timer:cancel(State#log_state.timer),
     {noreply, State#log_state{timer=none, status=stopped}}.
 
+handle_info(timeout, State) ->
+    {noreply, collect_parameters(State)}.
+
 %handle_call(_Request, _From, State) -> {reply, Reply, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
-handle_info(_Info, State) -> {noreply, State}.
+%handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
@@ -477,6 +493,38 @@ compare_timestamp({MegaSec, Sec1, _}, {MegaSec, Sec2, _}) ->
     compare(Sec1, Sec2);
 compare_timestamp({MegaSec1, _, _}, {MegaSec2, _, _}) ->
     compare(MegaSec1, MegaSec2).
+
+collect_parameters(State) ->
+    SimId = State#log_state.simid,
+    case application:get_application() of
+        {ok, App} ->
+	    Log = application:get_env(App, log),
+	    Modules = case Log of
+		{ok, all} ->
+		    collect_modules_sup({global, {SimId, es_simulator_sup}});
+		_ ->
+		    []
+	    end,
+	    Params = lists:merge(lists:map(fun(Module) -> query_module(SimId, Module) end, Modules)),
+	    State#log_state{parameters=Params};
+	undefined ->
+	    State
+    end.
+
+collect_modules_sup(SupRef) ->
+    Children = supervisor:which_children(SupRef),
+    lists:flatten(lists:map(fun(ChildSpec) -> collect_modules(ChildSpec) end, Children)).
+
+collect_modules({_,_,worker,Modules}) ->
+    Modules;
+collect_modules({_,Child,supervisor,_}) ->
+    collect_modules_sup(Child).
+
+query_module(SimId, Module) ->
+    Params = Module:params(),
+    lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = "Undefined", mfa = {Module, Function, [SimId]}} end, Params).
+    
+
 
 %%%==================================================================
 %%% Test functions

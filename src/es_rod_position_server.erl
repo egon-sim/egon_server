@@ -60,7 +60,7 @@
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [{ctrl_pos_cntr, control_position_counter}, {ctrl_pos, control_position}, {ctrl_pos_array, control_position_array_str}, {sd_pos_cntr, shutdown_position_counter}, {sd_pod, shutdown_position}].
+params() -> [{ctrl_pos_cntr, control_position_counter}, {ctrl_pos, control_position}, {ctrl_pos_array, control_position_array_str}, {sd_pos_cntr, shutdown_position_counter}, {sd_pos, shutdown_position}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

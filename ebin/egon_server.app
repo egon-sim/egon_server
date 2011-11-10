@@ -39,6 +39,7 @@
    {mod, {es_app, []}},
    {env, [
           {port, 1055},
+	  {log, all},
 	  {priv, "priv/"},
 	  {curvebook, "curvebook/"},
 	  {snapshots, "snapshots/"},

@@ -1,3 +1,7 @@
+BUGS:
+*- es_log_server:query_module does not handle 'function not exported' (after fixing that, remove params method from modules where it makes no sense: es_makeup_buffer_server, es_curvebook_server
+*- es_log_server:query_module sets description to "Undefined"
+
 Protocol:
 *- assemble by hand a list of messages which es_interface_server can send to other servers
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
@@ -7,7 +11,6 @@ General features:
 *+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)
 *- es_clock_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
-#+ every server should have a function which registers all of its exported state variables to es_log_server; that function should be called in init -> therefore es_log_server will have a log of all values
 #0 changing simulation speed
 #- add logging to configuration file
 
