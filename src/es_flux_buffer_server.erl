@@ -2,22 +2,20 @@
 -include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 -import(timer).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
 -record(flux_buffer_state, {simid, target, cycle_len, flux_diff_per_cycle}).
 
-config_list(State) -> [
-{cycle_len, State#flux_buffer_state.cycle_len},
-{flux_diff_per_cycle, State#flux_buffer_state.flux_diff_per_cycle}
-].
-
-status(State) ->
-    status(config_list(State), State).
-status([Head | Tail], State) ->
-    {Key, Val} = Head,
-    io:format("~w: ~w~n", [Key, Val]),
-    status(Tail, State);
-status([], _State) ->
-    ok.    
+%%-------------------------------------------------------------------
+%% @doc Returns list of available parameters.
+%%
+%% @spec params() -> [Param]
+%% where
+%%  Param = {Parameter_id, Function_name}
+%%  Parameter_id = term()
+%%  Function_name = term()
+%% @end
+%%-------------------------------------------------------------------
+params() -> [].
 
 start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
@@ -37,9 +35,6 @@ handle_call({set, flux_diff_per_cycle, Val}, _From, State) ->
 
 handle_call({get, state}, _From, State) ->
     {reply, State, State};
-
-handle_call({get, status}, _From, State) ->
-    {reply, status(State), State};
 
 handle_call({set, flux, Target}, _From, State) ->
 %    error_logger:info_report(["FBS: Set", {flux, Target}]),

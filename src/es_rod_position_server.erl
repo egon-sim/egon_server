@@ -12,6 +12,7 @@
 
 % API
 -export([
+	 params/0,
 	 start_link/1,
 	 stop_link/1,
 	 control_position_counter/1,
@@ -48,6 +49,18 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Returns list of available parameters.
+%%
+%% @spec params() -> [Param]
+%% where
+%%  Param = {Parameter_id, Function_name}
+%%  Parameter_id = term()
+%%  Function_name = term()
+%% @end
+%%-------------------------------------------------------------------
+params() -> [{ctrl_pos_cntr, control_position_counter}, {ctrl_pos, control_position}, {ctrl_pos_array, control_position_array_str}, {sd_pos_cntr, shutdown_position_counter}, {sd_pod, shutdown_position}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

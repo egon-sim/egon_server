@@ -12,9 +12,15 @@
 
 % API
 -export([
+	params/0,
 	start_link/1,
-	stop_link/1
+	stop_link/1,
+	power/1,
+	go/1,
+	target/1,
+	rate/1
 	]).
+
 
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -32,6 +38,18 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Returns list of available parameters.
+%%
+%% @spec params() -> [Param]
+%% where
+%%  Param = {Parameter_id, Function_name}
+%%  Parameter_id = term()
+%%  Function_name = term()
+%% @end
+%%-------------------------------------------------------------------
+params() -> [{power, power}, {go, go}, {target, target}, {rate, rate}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

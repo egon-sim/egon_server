@@ -1,11 +1,23 @@
 -module(es_ramper_server).
 -include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
 -record(ramper_state, {simid, turbine, target, rate, direction}).
 
 start_link(SimId) -> 
     gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Returns list of available parameters.
+%%
+%% @spec params() -> [Param]
+%% where
+%%  Param = {Parameter_id, Function_name}
+%%  Parameter_id = term()
+%%  Function_name = term()
+%% @end
+%%-------------------------------------------------------------------
+params() -> [].
 
 init([SimId]) ->
     {ok, #ramper_state{simid = SimId, turbine=es_turbine_server, target=none, rate=none, direction=none}}.
