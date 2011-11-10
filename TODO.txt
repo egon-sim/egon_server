@@ -15,9 +15,6 @@ General features:
 #0 changing simulation speed
 #- add logging to configuration file
 
-Separating implementation and configuration:
-*- move set_up_defaults from es_config_server to egon_server
-
 Erlang/OTP problem:
 #? errors in snapshot file do not generate error report
 #? if two gen_tcp servers listen on the same port, they fail silently
