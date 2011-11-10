@@ -9,9 +9,8 @@ Protocol:
 General features:
 *+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)
 *- es_clock_server:send_tick/2 should use gen_server:cast instead of gen_server:call
-*0 extract client code from egon_server
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
-#+ every server should have a function which sends all of its exported state variables to es_log_server; that function should be called right after init and every time state is changed -> therefore es_log_server will have a log of all values changes and will be able to plot graphs
+#+ every server should have a function which registers all of its exported state variables to es_log_server; that function should be called in init -> therefore es_log_server will have a log of all values
 #- implement es_log_server:get_time_range(SimId, StartTime, StopTime, Points) which will return list of values of Points in time range from StartTime to StopTime
 #0 changing simulation speed
 #- add logging to configuration file
@@ -27,8 +26,15 @@ Erlang/OTP problem:
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
 
+Reorganisation:
+* split egon_server into several applications:
+** egon_client application
+** egon_model: application which represents a model of a NPP
+** egon_interface: application which gives egon_model a TCP interface
+** egon_simulator: application which pairs egon_model and egon_interface (for single-user version of EGON)
+** egon_server: application which handles multiple instances of egon_simulator (for multiple user version of EGON)
+
 Releasing:
-#+ splitting egon_server into two applications: single-simulator (for single-user version of EGON) and server handling multiple instances of this single-simulator (for multiple user version of EGON)
 %+ es_releasing:generate_release/0 should remove erl.ini, install.bat should generate new erl.ini
 
 Removing dirty hacks:
