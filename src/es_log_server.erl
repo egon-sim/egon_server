@@ -26,6 +26,7 @@
 	database/1,
 	csv_dump/1,
 	range_dump/4,
+	range_dump/5,
 	start_logging/1,
 	stop_logging/1
 	]).
@@ -44,7 +45,8 @@
 		   database % list of collected data
 		   }).
 -record(log_parameter, {
-		       name, % string(): name of paramtere
+		       id, % atom
+		       description, % string(): description of parameter
 		       mfa, % {Module, Function, Arguments} defines a
 		           % call to retreive value of the parameter
 		       value % value of given parameter
@@ -192,7 +194,23 @@ timestamp(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 range_dump(SimId, StartTimestamp, EndTimestamp, Frequency) ->
-    gen_server:call(?SERVER(SimId), {get, range, {StartTimestamp, EndTimestamp, Frequency}}).
+    gen_server:call(?SERVER(SimId), {get, range, {all, StartTimestamp, EndTimestamp, Frequency}}).
+
+%%-------------------------------------------------------------------
+%% @doc Values of specific points from StartTimestamp, EndTimestamp
+%%      with timespan between points equal to Frequency
+%%
+%% @spec range(SimId, Params, StartTimestamp, EndTimestamp, Frequency) -> 
+%% 	 [Points]
+%% where
+%%  Params = [atom]
+%%  Points = [Timestamp|[Values]]
+%%  Timestamp = {integer(), integer(), integer()}
+%%  Values = [term()]
+%% @end
+%%-------------------------------------------------------------------
+range_dump(SimId, Params, StartTimestamp, EndTimestamp, Frequency) ->
+    gen_server:call(?SERVER(SimId), {get, range, {Params, StartTimestamp, EndTimestamp, Frequency}}).
 
 %%-------------------------------------------------------------------
 %% @doc Returns all information collected up until now given in CSV
@@ -247,8 +265,8 @@ handle_call({get, status}, _From, State) ->
 handle_call({get, database}, _From, State) ->
     {reply, lists:reverse(State#log_state.database), State};
 
-handle_call({get, range, {StartTimestamp, EndTimestamp, Frequency}}, _From, State) ->
-    Range = create_range(State#log_state.database, {StartTimestamp, EndTimestamp, Frequency}),
+handle_call({get, range, {Params, StartTimestamp, EndTimestamp, Frequency}}, _From, State) ->
+    Range = create_range(State#log_state.database, {Params, StartTimestamp, EndTimestamp, Frequency}),
     {reply, Range, State};
 
 handle_call({get, csv_dump}, _From, State) ->
@@ -272,9 +290,9 @@ handle_call({action, start}, _From, State) ->
     timer:start(),
     {reply, ok, State#log_state{timer=Timer, status=running}};
 
-handle_call({action, add_parameter, {Name, Server, Call}}, _From, State) ->
+handle_call({action, add_parameter, {Id, Description, Server, Call}}, _From, State) ->
     SimId = State#log_state.simid,
-    add_parameter(SimId, {Name, {gen_server, call, [{global, {SimId, Server}}, Call]}}),
+    add_parameter(SimId, {Id, Description, {gen_server, call, [{global, {SimId, Server}}, Call]}}),
     {reply, ok, State};
 
 handle_call({tick}, _From, State) when State#log_state.status =:= running ->
@@ -315,8 +333,8 @@ handle_cast({set, parameters, Val}, State) ->
     error_logger:info_report(["Setting parameters to log server", {parameters, Val}]),
     {noreply, State#log_state{parameters=Val}};
 
-handle_cast({action, add_parameter, {Name, {Module, Function, Arguments}}}, State) ->
-    New_param = #log_parameter{name = Name, mfa = {Module, Function, Arguments}},
+handle_cast({action, add_parameter, {Id, Description, {Module, Function, Arguments}}}, State) ->
+    New_param = #log_parameter{id = Id, description = Description, mfa = {Module, Function, Arguments}},
     error_logger:info_report(["Adding parameter to log server", {parameter, New_param}]),
     Parameters = State#log_state.parameters,
     {noreply, State#log_state{parameters=[New_param|Parameters]}};
@@ -350,21 +368,6 @@ parse_parameter(#log_parameter{mfa = {M, F, A}} = Parameter) ->
     Value = apply(M, F, A),
     Parameter#log_parameter{value = Value}.
 
-print_csv_dump(Database) ->
-    List = create_csv_dump(Database),
-    Lines = lists:map(fun(L) -> make_line(L) end, List),
-    format(Lines).
-
-make_line(Line) ->
-    format(make_line(lists:reverse(Line), [])).
-make_line([], Acc) ->
-    io_lib:format("~p", [Acc]);
-make_line([Head|Rest], Acc) ->
-    make_line(Rest, [format(Head)|Acc]).
-
-format(Str) ->
-    lists:flatten(io_lib:format("~p", [Str])).
-
 create_csv_dump([]) -> [];
 create_csv_dump([Head|Rest]) -> 
     create_csv_dump([], [Head|Rest], []).
@@ -375,17 +378,17 @@ create_csv_dump(Old_header, [Head|Rest], Acc) ->
     Header = get_header(Head),
     if
         Old_header =:= Header ->
-	    create_csv_dump(Header, Rest, [csv_entry(Head)|Acc]);
+	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|Acc]);
 	true ->
-	    create_csv_dump(Header, Rest, [csv_entry(Head)|[csv_header(Head)|Acc]])
+	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|[csv_header(Head)|Acc]])
     end.
 
-create_range(Database, {StartTimestamp, EndTimestamp, Frequency}) ->
-    create_range([], Database, {StartTimestamp, EndTimestamp, Frequency}).
+create_range(Database, {Params, StartTimestamp, EndTimestamp, Frequency}) ->
+    create_range([], Database, {Params, StartTimestamp, EndTimestamp, Frequency}).
     
 create_range(Acc, [], _) ->
     Acc;
-create_range(Acc, [Head|Rest], {StartTimestamp, EndTimestamp, Frequency}) ->
+create_range(Acc, [Head|Rest], {Params, StartTimestamp, EndTimestamp, Frequency}) ->
     Done = compare_timestamp(StartTimestamp, EndTimestamp) > 0,
     if
         Done ->
@@ -395,13 +398,13 @@ create_range(Acc, [Head|Rest], {StartTimestamp, EndTimestamp, Frequency}) ->
 	    EndOK = (compare_timestamp(EndTimestamp, Head#log_entry.timestamp) >= 0),
 	    if
 	        StartOK and EndOK ->
-		    New_acc = [csv_entry(Head)|Acc],
+		    New_acc = [csv_entry(Params, Head)|Acc],
 		    New_endTimestamp = dec_timestamp(Head#log_entry.timestamp, Frequency);
 	        true ->
 		    New_acc = Acc,
 		    New_endTimestamp = EndTimestamp
 	    end,
-    	    create_range(New_acc, Rest, {StartTimestamp, New_endTimestamp, Frequency})
+    	    create_range(New_acc, Rest, {Params, StartTimestamp, New_endTimestamp, Frequency})
 	end.
 
 get_header(Entry) ->
@@ -409,20 +412,29 @@ get_header(Entry) ->
 get_header([], Acc) ->
     lists:reverse(Acc);
 get_header([Head|Rest], Acc) ->
-    #log_parameter{name = Name} = Head,
-    get_header(Rest, [Name|Acc]).
+    #log_parameter{description = Description} = Head,
+    get_header(Rest, [Description|Acc]).
 
 csv_header(Header) ->
     ["Timestamp"|get_header(Header)].
 
-csv_entry(#log_entry{timestamp = Timestamp, parameters = Entries}) ->
-    csv_entry(Entries, [Timestamp]).
+csv_entry(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
+    csv_entry(Params, Entries, [Timestamp]).
 
-csv_entry([], Acc) ->
+csv_entry(_, [], Acc) ->
     lists:reverse(Acc);
-csv_entry([Head|Rest], Acc) ->
+csv_entry(all, [Head|Rest], Acc) ->
     #log_parameter{value = Value} = Head,
-    csv_entry(Rest, [Value|Acc]).
+    csv_entry(all, Rest, [Value|Acc]);
+csv_entry(Params, [Head|Rest], Acc) ->
+    #log_parameter{id = Id, value = Value} = Head,
+    Log = lists:member(Id, Params),
+    case Log of
+	true ->
+	    csv_entry(Params, Rest, [Value|Acc]);
+	false ->
+	    csv_entry(Params, Rest, Acc)
+    end.
     
 
 compare(Val1, Val2) ->
@@ -488,9 +500,9 @@ unit_test() ->
     ?assertEqual(1000, cycle_len(SimId)),
 
     ?assertEqual({error, {not_set, parameters}}, start_logging(SimId)),
-    ?assertEqual(ok, add_parameters(SimId, [{"Node", {erlang, node, []}}])),
+    ?assertEqual(ok, add_parameters(SimId, [{node, "Node", {erlang, node, []}}])),
 
-    ?assertEqual([#log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
+    ?assertEqual([#log_parameter{id = node, description = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
 
     ?assertEqual(stopped, status(SimId)),
     ?assertEqual(ok, start_logging(SimId)),
@@ -500,9 +512,9 @@ unit_test() ->
     ?assertEqual(ok, set_cycle_len(SimId, 500)),
     ?assertEqual(500, cycle_len(SimId)),
 
-    ?assertEqual(ok, add_parameter(SimId, {"Nodes", {erlang, nodes, []}})),
-    ?assertEqual([#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
-    #log_parameter{name = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
+    ?assertEqual(ok, add_parameter(SimId, {nodes, "Nodes", {erlang, nodes, []}})),
+    ?assertEqual([#log_parameter{id = nodes, description = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
+    #log_parameter{id = node, description = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
 
     timer:sleep(2000),
     ?assertEqual(ok, stop_logging(SimId)),
@@ -510,15 +522,15 @@ unit_test() ->
     Database = database(SimId),
     ?assertEqual(5, length(Database)),
 
-%    ?assertEqual(#log_entry{parameters = [#log_parameter{name = "Nodes", mfa = {erlang, nodes, []}}, 
-%    #log_parameter{name = "Node", mfa = {erlang, node, []}}]}, lists:last(Database)),
+%    ?assertEqual(#log_entry{parameters = [#log_parameter{id = nodes, description = "Nodes", mfa = {erlang, nodes, []}}, 
+%    #log_parameter{id = node, description = "Node", mfa = {erlang, node, []}}]}, lists:last(Database)),
 
 %    Retval = csv_dump(SimId),
 %    io:format("~p~n", [Retval]),
 
     {Megasec, Sec, Microsec} = erlang:now(),
 
-    Retval = range_dump(SimId, {Megasec, Sec - 3, Microsec}, {Megasec, Sec, Microsec}, 1),
+    Retval = range_dump(SimId, all, {Megasec, Sec - 3, Microsec}, {Megasec, Sec, Microsec}, 1),
     io:format("~p~n", [Retval]),
 
     ?assertEqual(stopped, stop_link(SimId)),
@@ -534,8 +546,8 @@ integration_test() ->
     ?assertEqual(ok, set_cycle_len(SimId, 500)),
 
     ok = add_parameters(SimId, [
-        {"Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
-        {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
+        {tavg, "Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
+        {turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
     ]),
 
     ?assertEqual(ok, start_logging(SimId)),
@@ -546,7 +558,7 @@ integration_test() ->
     es_rod_position_server:step_in(SimId),
 
     ?assertEqual(ok, add_parameter(SimId, 
-        {"Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
+        {turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
     )),
 
     timer:sleep(2000),

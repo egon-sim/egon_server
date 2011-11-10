@@ -11,7 +11,6 @@ General features:
 *- es_clock_server:send_tick/2 should use gen_server:cast instead of gen_server:call
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
 #+ every server should have a function which registers all of its exported state variables to es_log_server; that function should be called in init -> therefore es_log_server will have a log of all values
-#- implement es_log_server:get_time_range(SimId, StartTime, StopTime, Points) which will return list of values of Points in time range from StartTime to StopTime
 #0 changing simulation speed
 #- add logging to configuration file
 
