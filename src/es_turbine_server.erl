@@ -49,7 +49,7 @@
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [{power, power}, {go, go}, {target, target}, {rate, rate}].
+params() -> [{turbine_power, power}, {go, go}, {target, target}, {rate, rate}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

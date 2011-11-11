@@ -522,7 +522,7 @@ collect_modules({_,Child,supervisor,_}) ->
 
 query_module(SimId, Module) ->
     Params = Module:params(),
-    lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = "Undefined", mfa = {Module, Function, [SimId]}} end, Params).
+    lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = undefined, mfa = {Module, Function, [SimId]}} end, Params).
     
 
 
