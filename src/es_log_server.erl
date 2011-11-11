@@ -569,6 +569,9 @@ unit_test() ->
     ?assertEqual(stopped, status(SimId)),
     Database = database(SimId),
     ?assertEqual(5, length(Database)),
+    [L1|[L2|[L3|_]]] = Database,
+    ?assertEqual(-1, compare_timestamp(L1#log_entry.timestamp, L2#log_entry.timestamp)),
+    ?assertEqual(-1, compare_timestamp(L2#log_entry.timestamp, L3#log_entry.timestamp)),
 
 %    ?assertEqual(#log_entry{parameters = [#log_parameter{id = nodes, description = "Nodes", mfa = {erlang, nodes, []}}, 
 %    #log_parameter{id = node, description = "Node", mfa = {erlang, node, []}}]}, lists:last(Database)),
