@@ -13,6 +13,11 @@
 -export([
 	params/0,
 	start_link/1,
+	tavg/1,
+	flux/1,
+	set_flux/2,
+	burnup/1,
+	boron/1,
 	stop_link/1
 	]).
 
@@ -41,7 +46,7 @@
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [].
+params() -> [{tavg, "Average temperature of primary coolant", tavg}, {flux, "Neutron flux in reactor core", flux}, {burnup, "Burnup of reactor core", burnup}, {boron, "Concentration of boron in reactor core", boron}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -62,6 +67,51 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
+
+%%-------------------------------------------------------------------
+%% @doc Returns average temperature of reactor coolant.
+%%
+%% @spec tavg(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+tavg(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, tavg}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns neutron flux in reactor core.
+%%
+%% @spec flux(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+flux(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, flux}).
+
+%%-------------------------------------------------------------------
+%% @doc Sets value of neutron flux in reactor core.
+%%
+%% @spec flux(SimId::integer(), Val::float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+set_flux(SimId, Val) ->
+    gen_server:call(?SERVER(SimId), {set, flux, Val}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns burnup of reactor core.
+%%
+%% @spec burnup(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+burnup(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, burnup}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns concentration of boron in reactor coolant.
+%%
+%% @spec boron(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+boron(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, boron}).
 
 
 %%%==================================================================
@@ -100,7 +150,7 @@ handle_call({set, flux, Flux}, _From, State) ->
 
 handle_call({get, tavg}, _From, State) ->
     SimId = State#core_state.simid,
-    Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
+    Tref = es_w7300_server:tref(SimId),
     Tavg = Tref + tref_mismatch(State),
     {reply, Tavg, State};
 

@@ -43,7 +43,7 @@ handle_call({set, flux, Target}, _From, State) ->
 handle_call({tick}, _From, State) ->% when From =:= State#flux_buffer_state.timer ->
 %    io:format("From: ~w, Timer: ~w~n", [From, State#flux_buffer_state.timer]),
     SimId = State#flux_buffer_state.simid,
-    Flux = gen_server:call({global, {SimId, es_core_server}}, {get, flux}),
+    Flux = es_core_server:flux(SimId),
     if
         State#flux_buffer_state.target =:= undef ->
 	    Target = Flux;
@@ -66,7 +66,7 @@ handle_call({tick}, _From, State) ->% when From =:= State#flux_buffer_state.time
 	true ->
 	    New = Flux + Direction * State#flux_buffer_state.flux_diff_per_cycle,
 %	    error_logger:info_report(["FBS: Enter", {flux, Flux}, {target, Target}]),
-    	    gen_server:call({global, {SimId, es_core_server}}, {set, flux, New}),
+    	    es_core_server:set_flux(SimId, New),
 	    {reply, tick, State}
     end;
 

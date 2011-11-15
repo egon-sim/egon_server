@@ -252,8 +252,8 @@ ticks_to_step(State) ->
     Ticks_per_second * Seconds_to_step.
 
 calc_terr(#rod_controller_state{simid = SimId}) ->
-    Tavg = gen_server:call({global, {SimId, es_core_server}}, {get, tavg}),
-    Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
+    Tavg = es_core_server:tavg(SimId),
+    Tref = es_w7300_server:tref(SimId),
     Tref - Tavg.
 
 
