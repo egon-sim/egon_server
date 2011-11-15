@@ -52,7 +52,7 @@
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [{rodctrl_speed, speed}, {rodctrl_mode, mode}].
+params() -> [{rodctrl_speed, "Rod control system speed", speed}, {rodctrl_mode, "Rod control system mode", mode}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

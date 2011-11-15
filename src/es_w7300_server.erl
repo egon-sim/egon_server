@@ -18,7 +18,7 @@ start_link(SimId) ->
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [{tref, tref}].
+params() -> [{tref, "Tref", tref}].
 
 tref(SimId) ->
     gen_server:call(?SERVER(SimId), {get, tref}).

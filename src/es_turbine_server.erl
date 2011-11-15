@@ -44,12 +44,12 @@
 %%
 %% @spec params() -> [Param]
 %% where
-%%  Param = {Parameter_id, Function_name}
+%%  Param = {Parameter_id, Parameter_description, Function_name}
 %%  Parameter_id = term()
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [{turbine_power, power}, {go, go}, {target, target}, {rate, rate}].
+params() -> [{turbine_power, "Turbine power", power}, {go, "Turbine changing power", go}, {target, "Turbine target power", target}, {rate, "Rate of turbine power change", rate}].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.

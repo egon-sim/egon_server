@@ -13,7 +13,6 @@
 
 % API
 -export([
-	params/0,
 	start_link/1,
 	stop_link/1,
 	cycle_len/1,
@@ -63,18 +62,6 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
-
-%%-------------------------------------------------------------------
-%% @doc Returns list of available parameters.
-%%
-%% @spec params() -> [Param]
-%% where
-%%  Param = {Parameter_id, Function_name}
-%%  Parameter_id = term()
-%%  Function_name = term()
-%% @end
-%%-------------------------------------------------------------------
-params() -> [].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -528,8 +515,7 @@ query_module(SimId, Module) ->
 	_ ->
 	    Resp
     end,
-    lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = undefined, mfa = {Module, Function, [SimId]}} end, Params).
-    
+    lists:map(fun({Id, Desc, Function}) -> #log_parameter{id = Id, description = Desc, mfa = {Module, Function, [SimId]}} end, Params).
 
 
 %%%==================================================================

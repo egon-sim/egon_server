@@ -1,5 +1,4 @@
 BUGS:
-*- es_log_server:query_module sets description to undefined
 *0 es_log_server:csv_entry does not honour order of Params
 *- es_rod_position_server:params/0 has some parameters removed (parameters which return strings)
 
