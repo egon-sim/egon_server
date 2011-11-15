@@ -435,12 +435,30 @@ csv_entry(Params, Entries) ->
 csv_entry_pick(all, Entries) ->
     Entries;
 csv_entry_pick(Params, Entries) ->
-    lists:filter(
-        fun(#log_parameter{id = Id}) ->
-            lists:is_member(Id, Params)
+    csv_entry_sort(
+        Params,
+        lists:filter(
+            fun(#log_parameter{id = Id}) ->
+                lists:is_member(Id, Params)
+            end,
+            Entries)).
+
+csv_entry_sort(Params, Entries) ->
+    lists:sort(
+        fun(#log_parameter{id = A}, #log_parameter{id = B}) ->
+            index(A, Params) < index(B, Params)
         end,
         Entries).
-    
+
+index(Member, List) ->
+    index(Member, List, 0).
+
+index(_, [], _) ->
+    -1;
+index(Member, [Member|_], Counter) ->
+    Counter;
+index(Member, [_|Rest], Counter) ->
+    index(Member, Rest, Counter + 1).
 
 compare(Val1, Val2) ->
     if
@@ -453,8 +471,6 @@ compare(Val1, Val2) ->
         true ->
 	    {error, values_not_comparable}
     end.
-
-
 
 inc_timestamp({MegaSec, Sec, MicroSec}, SecInc) ->
     New_microSec = MicroSec + trunc((SecInc - trunc(SecInc)) * 1000000),
