@@ -425,12 +425,11 @@ csv_entries(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
     [Timestamp|csv_entry(Params, Entries)].
 
 csv_entry(Params, Entries) ->
-    lists:reverse(
-        lists:map(
-            fun(#log_parameter{value = Value}) ->
-                Value
-            end,
-            csv_entry_pick(Params, Entries))).
+    lists:map(
+        fun(#log_parameter{value = Value}) ->
+            Value
+        end,
+        csv_entry_pick(Params, Entries)).
 
 csv_entry_pick(all, Entries) ->
     Entries;
@@ -439,7 +438,7 @@ csv_entry_pick(Params, Entries) ->
         Params,
         lists:filter(
             fun(#log_parameter{id = Id}) ->
-                lists:is_member(Id, Params)
+                lists:member(Id, Params)
             end,
             Entries)).
 
