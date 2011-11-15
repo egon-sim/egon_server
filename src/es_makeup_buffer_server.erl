@@ -13,7 +13,6 @@
 
 % API
 -export([
-	params/0,
 	start_link/1,
 	stop_link/1,
 	borate/2,
@@ -35,18 +34,6 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
-
-%%-------------------------------------------------------------------
-%% @doc Returns list of available parameters.
-%%
-%% @spec params() -> [Param]
-%% where
-%%  Param = {Parameter_id, Function_name}
-%%  Parameter_id = term()
-%%  Function_name = term()
-%% @end
-%%-------------------------------------------------------------------
-params() -> [].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -122,7 +109,7 @@ handle_call({action, borate, [_RCS, VADD]}, _From, State) ->
     TNK = 7000,
     WADD = 1.00663,
     W = 140933,
-    RCS = gen_server:call({global, {SimId, es_core_server}}, {get, boron}),
+    RCS = es_core_server:boron(SimId),
     Boron = boron_diff(RCS, TNK, VADD, WADD, W),
     New_buffers = lists:append(State#makeup_buffer_state.buffers, [{borate, Boron}]),
     {reply, Boron, State#makeup_buffer_state{buffers=New_buffers}};
@@ -192,15 +179,15 @@ integration_test() ->
 
     ?assertEqual(ok, egon_server:run(SimId)),
 
-    ?assertEqual(1515, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
+    ?assertEqual(1515, es_core_server:boron(SimId)),
 
     borate(SimId, 200),
 
     timer:sleep(2500),
-    ?assertEqual(1517, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
+    ?assertEqual(1517, es_core_server:boron(SimId)),
 
     timer:sleep(2000),
-    ?assertEqual(1519, gen_server:call({global, {SimId, es_core_server}}, {get, boron})),
+    ?assertEqual(1519, es_core_server:boron(SimId)),
 
     ?assertEqual(ok, egon_server:stop()),
     ok.

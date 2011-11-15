@@ -332,7 +332,8 @@ disconnect_serv(State) ->
 
 client_test() ->
     ?assertEqual(ok, egon_server:start()),
-    {ok,_} = start_link("localhost", 1055, "Test user"),
+    {ok, Port} = application:get_env(egon_server, port),
+    {ok,_} = start_link("localhost", Port, "Test user"),
     ?assertEqual({ok, 1}, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
     ?assertEqual({ok, 2}, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
     ?assertEqual({ok, 3}, new_sim("Test sim 3", "Simulator for purposes of unit testing")),

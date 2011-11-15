@@ -1,10 +1,40 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server implementing a model of reactor core.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_core_server).
--include_lib("eunit/include/eunit.hrl").
--behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
--record(core_state, {simid, boron, burnup, flux}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+-behaviour(gen_server).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+
+% API
+-export([
+	params/0,
+	start_link/1,
+	tavg/1,
+	flux/1,
+	set_flux/2,
+	burnup/1,
+	boron/1,
+	stop_link/1
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
+-record(core_state, {
+                    simid, % ID of a simulator to which this server belongs
+                    boron, % boron concentration in the core
+                    burnup, % burnup of the core
+                    flux % neutron flux in the core
+                    }).
+
+%%%==================================================================
+%%% API
+%%%==================================================================
 
 %%-------------------------------------------------------------------
 %% @doc Returns list of available parameters.
@@ -16,7 +46,77 @@ start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, 
 %%  Function_name = term()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [].
+params() -> [{tavg, "Average temperature of primary coolant", tavg}, {flux, "Neutron flux in reactor core", flux}, {burnup, "Burnup of reactor core", burnup}, {boron, "Concentration of boron in reactor core", boron}].
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+%%-------------------------------------------------------------------
+%% @doc Returns average temperature of reactor coolant.
+%%
+%% @spec tavg(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+tavg(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, tavg}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns neutron flux in reactor core.
+%%
+%% @spec flux(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+flux(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, flux}).
+
+%%-------------------------------------------------------------------
+%% @doc Sets value of neutron flux in reactor core.
+%%
+%% @spec flux(SimId::integer(), Val::float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+set_flux(SimId, Val) ->
+    gen_server:call(?SERVER(SimId), {set, flux, Val}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns burnup of reactor core.
+%%
+%% @spec burnup(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+burnup(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, burnup}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns concentration of boron in reactor coolant.
+%%
+%% @spec boron(SimId::integer()) -> float()
+%% @end
+%%-------------------------------------------------------------------
+boron(SimId) ->
+    gen_server:call(?SERVER(SimId), {get, boron}).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
     {ok, #core_state{simid = SimId}}.
@@ -50,7 +150,7 @@ handle_call({set, flux, Flux}, _From, State) ->
 
 handle_call({get, tavg}, _From, State) ->
     SimId = State#core_state.simid,
-    Tref = gen_server:call({global, {SimId, es_w7300_server}}, {get, tref}),
+    Tref = es_w7300_server:tref(SimId),
     Tavg = Tref + tref_mismatch(State),
     {reply, Tavg, State};
 
@@ -78,6 +178,11 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
 
 pcms_from_full_power(State) ->
     Boron = State#core_state.boron,
@@ -107,3 +212,12 @@ mtc(State) ->
 tref_mismatch(State) ->
     Pcms = pcms_from_full_power(State),
     Pcms / mtc(State).
+
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() ->
+    ok.

@@ -13,7 +13,6 @@
 
 % API
 -export([
-	params/0,
 	start_link/1,
 	stop_link/1,
 	cycle_len/1,
@@ -63,18 +62,6 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
-
-%%-------------------------------------------------------------------
-%% @doc Returns list of available parameters.
-%%
-%% @spec params() -> [Param]
-%% where
-%%  Param = {Parameter_id, Function_name}
-%%  Parameter_id = term()
-%%  Function_name = term()
-%% @end
-%%-------------------------------------------------------------------
-params() -> [].
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -394,9 +381,9 @@ create_csv_dump(Old_header, [Head|Rest], Acc) ->
     Header = get_header(Head),
     if
         Old_header =:= Header ->
-	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|Acc]);
+	    create_csv_dump(Header, Rest, [csv_entries(all, Head)|Acc]);
 	true ->
-	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|[csv_header(Head)|Acc]])
+	    create_csv_dump(Header, Rest, [csv_entries(all, Head)|[csv_header(Head)|Acc]])
     end.
 
 create_range(Database, {Params, StartTimestamp, EndTimestamp, Frequency}) ->
@@ -414,7 +401,7 @@ create_range(Acc, [Head|Rest], {Params, StartTimestamp, EndTimestamp, Frequency}
 	    EndOK = (compare_timestamp(EndTimestamp, Head#log_entry.timestamp) >= 0),
 	    if
 	        StartOK and EndOK ->
-		    New_acc = [csv_entry(Params, Head)|Acc],
+		    New_acc = [csv_entries(Params, Head)|Acc],
 		    New_endTimestamp = dec_timestamp(Head#log_entry.timestamp, Frequency);
 	        true ->
 		    New_acc = Acc,
@@ -434,24 +421,43 @@ get_header([Head|Rest], Acc) ->
 csv_header(Header) ->
     ["Timestamp"|get_header(Header)].
 
-csv_entry(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
-    csv_entry(Params, Entries, [Timestamp]).
+csv_entries(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
+    [Timestamp|csv_entry(Params, Entries)].
 
-csv_entry(_, [], Acc) ->
-    lists:reverse(Acc);
-csv_entry(all, [Head|Rest], Acc) ->
-    #log_parameter{value = Value} = Head,
-    csv_entry(all, Rest, [Value|Acc]);
-csv_entry(Params, [Head|Rest], Acc) ->
-    #log_parameter{id = Id, value = Value} = Head,
-    Log = lists:member(Id, Params),
-    case Log of
-	true ->
-	    csv_entry(Params, Rest, [Value|Acc]);
-	false ->
-	    csv_entry(Params, Rest, Acc)
-    end.
-    
+csv_entry(Params, Entries) ->
+    lists:map(
+        fun(#log_parameter{value = Value}) ->
+            Value
+        end,
+        csv_entry_pick(Params, Entries)).
+
+csv_entry_pick(all, Entries) ->
+    Entries;
+csv_entry_pick(Params, Entries) ->
+    csv_entry_sort(
+        Params,
+        lists:filter(
+            fun(#log_parameter{id = Id}) ->
+                lists:member(Id, Params)
+            end,
+            Entries)).
+
+csv_entry_sort(Params, Entries) ->
+    lists:sort(
+        fun(#log_parameter{id = A}, #log_parameter{id = B}) ->
+            index(A, Params) < index(B, Params)
+        end,
+        Entries).
+
+index(Member, List) ->
+    index(Member, List, 0).
+
+index(_, [], _) ->
+    -1;
+index(Member, [Member|_], Counter) ->
+    Counter;
+index(Member, [_|Rest], Counter) ->
+    index(Member, Rest, Counter + 1).
 
 compare(Val1, Val2) ->
     if
@@ -464,8 +470,6 @@ compare(Val1, Val2) ->
         true ->
 	    {error, values_not_comparable}
     end.
-
-
 
 inc_timestamp({MegaSec, Sec, MicroSec}, SecInc) ->
     New_microSec = MicroSec + trunc((SecInc - trunc(SecInc)) * 1000000),
@@ -521,10 +525,27 @@ collect_modules({_,Child,supervisor,_}) ->
     collect_modules_sup(Child).
 
 query_module(SimId, Module) ->
-    Params = Module:params(),
-    lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = undefined, mfa = {Module, Function, [SimId]}} end, Params).
-    
+    Resp = (catch Module:params()),
+    Params = case Resp of
+	{'EXIT', _} ->
+	    [];
+	_ ->
+	    Resp
+    end,
+    lists:map(fun({Id, Desc, Function}) -> #log_parameter{id = Id, description = Desc, mfa = {Module, Function, [SimId]}} end, Params).
 
+atomify(String) ->
+    list_to_atom(lists:map(
+        fun(Char) ->
+            Space = hd(" "),
+            if
+                Char == Space ->
+                    hd("_");
+                true ->
+                    Char
+            end
+        end,
+        String)).
 
 %%%==================================================================
 %%% Test functions
