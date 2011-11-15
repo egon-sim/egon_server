@@ -1,10 +1,35 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server implementing a model of reactor core.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_core_server).
--include_lib("eunit/include/eunit.hrl").
--behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
--record(core_state, {simid, boron, burnup, flux}).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+-behaviour(gen_server).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+
+% API
+-export([
+	params/0,
+	start_link/1,
+	stop_link/1
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
+-record(core_state, {
+                    simid, % ID of a simulator to which this server belongs
+                    boron, % boron concentration in the core
+                    burnup, % burnup of the core
+                    flux % neutron flux in the core
+                    }).
+
+%%%==================================================================
+%%% API
+%%%==================================================================
 
 %%-------------------------------------------------------------------
 %% @doc Returns list of available parameters.
@@ -17,6 +42,31 @@ start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, 
 %% @end
 %%-------------------------------------------------------------------
 params() -> [].
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
     {ok, #core_state{simid = SimId}}.
@@ -79,6 +129,11 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
+
 pcms_from_full_power(State) ->
     Boron = State#core_state.boron,
     Burnup = State#core_state.burnup,
@@ -107,3 +162,12 @@ mtc(State) ->
 tref_mismatch(State) ->
     Pcms = pcms_from_full_power(State),
     Pcms / mtc(State).
+
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() ->
+    ok.
