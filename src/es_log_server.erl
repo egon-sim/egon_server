@@ -521,7 +521,13 @@ collect_modules({_,Child,supervisor,_}) ->
     collect_modules_sup(Child).
 
 query_module(SimId, Module) ->
-    Params = Module:params(),
+    Resp = (catch Module:params()),
+    Params = case Resp of
+	{'EXIT', _} ->
+	    [];
+	_ ->
+	    Resp
+    end,
     lists:map(fun({Id, Function}) -> #log_parameter{id = Id, description = undefined, mfa = {Module, Function, [SimId]}} end, Params).
     
 
