@@ -533,8 +533,20 @@ query_module(SimId, Module) ->
 	_ ->
 	    Resp
     end,
-    lists:map(fun({Id, Desc, Function}) -> #log_parameter{id = Id, description = Desc, mfa = {Module, Function, [SimId]}} end, Params).
+    lists:map(fun({Id, Desc, Function}) -> #log_parameter{id = Id, description = atomify(Desc), mfa = {Module, Function, [SimId]}} end, Params).
 
+atomify(String) ->
+    list_to_atom(lists:map(
+        fun(Char) ->
+            Space = hd(" "),
+            if
+                Char == Space ->
+                    hd("_");
+                true ->
+                    Char
+            end
+        end,
+        String)).
 
 %%%==================================================================
 %%% Test functions
