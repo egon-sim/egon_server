@@ -9,7 +9,6 @@
       es_config_server,
       es_connection_server,
       es_convert,
-      es_core,
       es_core_server, 
       es_curvebook_server,
       es_flux_buffer_server, 
