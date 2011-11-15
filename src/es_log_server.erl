@@ -381,9 +381,9 @@ create_csv_dump(Old_header, [Head|Rest], Acc) ->
     Header = get_header(Head),
     if
         Old_header =:= Header ->
-	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|Acc]);
+	    create_csv_dump(Header, Rest, [csv_entries(all, Head)|Acc]);
 	true ->
-	    create_csv_dump(Header, Rest, [csv_entry(all, Head)|[csv_header(Head)|Acc]])
+	    create_csv_dump(Header, Rest, [csv_entries(all, Head)|[csv_header(Head)|Acc]])
     end.
 
 create_range(Database, {Params, StartTimestamp, EndTimestamp, Frequency}) ->
@@ -401,7 +401,7 @@ create_range(Acc, [Head|Rest], {Params, StartTimestamp, EndTimestamp, Frequency}
 	    EndOK = (compare_timestamp(EndTimestamp, Head#log_entry.timestamp) >= 0),
 	    if
 	        StartOK and EndOK ->
-		    New_acc = [csv_entry(Params, Head)|Acc],
+		    New_acc = [csv_entries(Params, Head)|Acc],
 		    New_endTimestamp = dec_timestamp(Head#log_entry.timestamp, Frequency);
 	        true ->
 		    New_acc = Acc,
@@ -421,23 +421,25 @@ get_header([Head|Rest], Acc) ->
 csv_header(Header) ->
     ["Timestamp"|get_header(Header)].
 
-csv_entry(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
-    csv_entry(Params, Entries, [Timestamp]).
+csv_entries(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
+    [Timestamp|csv_entry(Params, Entries)].
 
-csv_entry(_, [], Acc) ->
-    lists:reverse(Acc);
-csv_entry(all, [Head|Rest], Acc) ->
-    #log_parameter{value = Value} = Head,
-    csv_entry(all, Rest, [Value|Acc]);
-csv_entry(Params, [Head|Rest], Acc) ->
-    #log_parameter{id = Id, value = Value} = Head,
-    Log = lists:member(Id, Params),
-    case Log of
-	true ->
-	    csv_entry(Params, Rest, [Value|Acc]);
-	false ->
-	    csv_entry(Params, Rest, Acc)
-    end.
+csv_entry(Params, Entries) ->
+    lists:reverse(
+        lists:map(
+            fun(#log_parameter{value = Value}) ->
+                Value
+            end,
+            csv_entry_pick(Params, Entries))).
+
+csv_entry_pick(all, Entries) ->
+    Entries;
+csv_entry_pick(Params, Entries) ->
+    lists:filter(
+        fun(#log_parameter{id = Id}) ->
+            lists:is_member(Id, Params)
+        end,
+        Entries).
     
 
 compare(Val1, Val2) ->
