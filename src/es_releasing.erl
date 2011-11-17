@@ -1,11 +1,15 @@
 -module(es_releasing).
--export([create_release/0, clear_files/0]).
+-export([create_release/0, create_release/1, create_release/3]).
 
 create_release() ->
-    create_release("releases", "egon_server").
+    create_release(linux).
 
-create_release(Release_dir, Rel_file_name) ->
-    Full_name = Release_dir ++ "/" ++ Rel_file_name,
+create_release(System) ->
+    create_release("releases", "egon_server", System).
+
+create_release(Release_dir, Rel_file_name, System) ->
+    Rel_file_postfix = atom_to_list(System),
+    Full_name = Release_dir ++ "/" ++ Rel_file_name ++ "." ++ Rel_file_postfix,
 
     {ok, [{release, {Rel_name, Rel_version}, {erts, Erts_version}, _Apps}]} = file:consult(Full_name ++ ".rel"),
 
@@ -13,16 +17,23 @@ create_release(Release_dir, Rel_file_name) ->
     Erts = "erts-" ++ Erts_version,
 
     code:add_patha("./ebin"),
-    clear_files(Release_dir, Rel_file_name, Release_name),
+    clear_files(Full_name, Release_dir ++ "/" ++ Release_name),
     systools:make_script(Full_name, []),
     systools:make_tar(Full_name, [{erts, code:root_dir()}]),
     erl_tar:extract(Full_name ++ ".tar.gz", [{cwd, Release_dir ++ "/" ++ Release_name}, compressed]),
+    generate_support(Release_dir, Rel_file_name, Release_name, Erts, System),
+    cleanup(Full_name),
+    ok.
+
+generate_support(Release_dir, Rel_file_name, Release_name, Erts, windows) ->
     generate_ini(Release_dir, Release_name, Erts),
     generate_install(Release_dir, Release_name, Erts),
     generate_start(Release_dir, Rel_file_name, Release_name, Erts),
     generate_start2(Release_dir, Rel_file_name, Release_name, Erts),
     copy_files(Release_dir, Rel_file_name, Release_name),
-    cleanup(Release_dir, Rel_file_name, Release_name),
+    ok;
+
+generate_support(Release_dir, Rel_file_name, Release_name, Erts, linux) ->
     ok.
 
 generate_ini(Release_dir, Release_name, Erts) ->
@@ -46,12 +57,7 @@ generate_start2(Release_dir, Rel_file_name, Release_name, Erts) ->
     Content = Erts ++ "\\bin\\erl -sname " ++ Rel_file_name ++ " -boot " ++ Rel_file_name ++ "\n",
     file:write_file(Filename, Content).    
 
-clear_files() ->
-    clear_files("release_files", "egon_server", "egon_release").
-
-clear_files(Release_dir, Rel_file_name, Release_name) ->
-    Full_name = Release_dir ++ "/" ++ Rel_file_name,
-    Full_release_name = Release_dir ++ "/" ++ Release_name,
+clear_files(Full_name, Full_release_name) ->
     delete(Full_name ++ ".boot"),
     delete(Full_name ++ ".script"),
     delete(Full_name ++ ".tar.gz"),
@@ -62,8 +68,7 @@ copy_files(Release_dir, Rel_file_name, Release_name) ->
     Full_release_name = Release_dir ++ "/" ++ Release_name,
     file:rename(Full_name ++ ".boot", Full_release_name ++ "/" ++ Rel_file_name ++ ".boot").
 
-cleanup(Release_dir, Rel_file_name, _Release_name) ->
-    Full_name = Release_dir ++ "/" ++ Rel_file_name,
+cleanup(Full_name) ->
     delete(Full_name ++ ".tar.gz"),
     delete(Full_name ++ ".script").
 
