@@ -12,9 +12,9 @@
 
 
 priv_dir(App) ->
-    io:format("App: ~p~n", [App]),
-    io:format("Cwd: ~p~n", [file:get_cwd()]),
-    io:format("Priv: ~p~n", [code:priv_dir(App)]),
+%    io:format("App: ~p~n", [App]),
+%    io:format("Cwd: ~p~n", [file:get_cwd()]),
+%    io:format("Priv: ~p~n", [code:priv_dir(App)]),
     case code:priv_dir(App) of
         {error, bad_name} ->
 	    {ok, Cwd} = file:get_cwd(),

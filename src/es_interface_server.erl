@@ -7,7 +7,7 @@
 start_link(SimId, User) -> gen_server:start_link(?MODULE, [SimId, User], []).
 
 init([SimId, User]) -> 
-    {ok, LSock} = gen_tcp:listen(0, [{active, true}]),
+    {ok, LSock} = gen_tcp:listen(0, [{active, true}, {reuseaddr, true}]),
     {ok, Port} = inet:port(LSock),
     io:format("server for user ~p listening on port ~p.~n", [User, Port]),
     {ok, #interface_state{simid = SimId, port = Port, user = User, lsock = LSock, buffer=[], client=none}}.
@@ -20,7 +20,7 @@ handle_info({tcp_closed, _Socket}, State) ->
     Port = State#interface_state.port,
     Old_sock = State#interface_state.lsock,
     gen_tcp:close(Old_sock),
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+    {ok, LSock} = gen_tcp:listen(Port, [{active, true}, {reuseaddr, true}]),
     {ok, Sock} = gen_tcp:accept(LSock),
     {noreply, State#interface_state{lsock = LSock, client = Sock, buffer=[]}}.
     
@@ -37,7 +37,12 @@ handle_cast({listen}, #interface_state{lsock = LSock} = State) ->
     {ok, Sock} = gen_tcp:accept(LSock),
     {noreply, State#interface_state{client = Sock, buffer=[]}};
 
-handle_cast(stop, State) -> {stop, normal, State}.
+handle_cast(stop, State) ->
+    Lsock = State#interface_state.lsock,
+    gen_tcp:close(Lsock),
+    Rsock = State#interface_state.rsock,
+    gen_tcp:close(Rsock),
+    {stop, normal, State}.
 
 %handle_cast(_Msg, State) -> {noreply, State}.
 %handle_info(_Info, State) -> {noreply, State}.

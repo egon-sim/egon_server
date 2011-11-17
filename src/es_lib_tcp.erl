@@ -107,7 +107,7 @@ call(#lib_tcp_state{} = _State, {M, F, A}) ->
 %%% gen_server callbacks (used only for testing purposes)
 %%%==================================================================
 init([Port]) -> 
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+    {ok, LSock} = gen_tcp:listen(Port, [{active, true}, {reuseaddr, true}]),
     {ok, #lib_tcp_state{port = Port, lsock = LSock, buffer=[]}, 0}.
 
 handle_info({tcp, Socket, RawData}, State) ->
@@ -118,7 +118,7 @@ handle_info({tcp_closed, _Socket}, State) ->
     Port = State#lib_tcp_state.port,
     Old_sock = State#lib_tcp_state.lsock,
     gen_tcp:close(Old_sock),
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+    {ok, LSock} = gen_tcp:listen(Port, [{active, true}, {reuseaddr, true}]),
     {ok, CSock} = gen_tcp:accept(LSock),
     io:format("socket restarted.~n"),
     {noreply, State#lib_tcp_state{lsock = LSock, csock = CSock, buffer=[]}};

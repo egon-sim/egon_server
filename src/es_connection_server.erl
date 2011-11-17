@@ -7,7 +7,7 @@
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
 
 init([Port]) -> 
-    Retval = gen_tcp:listen(Port, [{active, true}]),
+    Retval = gen_tcp:listen(Port, [{active, true}, {reuseaddr, true}]),
     case Retval of
         {ok, LSock} ->
     	    io:format("Connection server started normally.~n"),
@@ -25,7 +25,7 @@ handle_info({tcp_closed, _Socket}, State) ->
     Port = State#connection_state.port,
     Old_sock = State#connection_state.lsock,
     gen_tcp:close(Old_sock),
-    {ok, LSock} = gen_tcp:listen(Port, [{active, true}]),
+    {ok, LSock} = gen_tcp:listen(Port, [{active, true}, {reuseaddr, true}]),
     {ok, _Sock} = gen_tcp:accept(LSock),
     io:format("socket restarted.~n"),
     {noreply, State#connection_state{lsock = LSock, buffer=[]}};
@@ -34,7 +34,10 @@ handle_info(timeout, #connection_state{lsock = LSock} = State) ->
     {ok, _Sock} = gen_tcp:accept(LSock),
     {noreply, State}.
 
-handle_cast(stop, State) -> {stop, normal, State}.
+handle_cast(stop, State) ->
+    Sock = State#connection_state.lsock,
+    gen_tcp:close(Sock),
+    {stop, normal, State}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
 %handle_cast(_Msg, State) -> {noreply, State}.
