@@ -24,7 +24,7 @@ init([SimId]) ->
 
 stop(SimId, Target, Rate) ->
     ok = gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, stop}),
-    Power = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
+    Power = es_turbine_server:power(SimId),
     error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
 
 handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
@@ -35,13 +35,13 @@ handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
     end,
     New_state = State#ramper_state{target=Target, rate=Rate, direction=Direction},
     SimId = State#ramper_state.simid,
-    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
+    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
     {reply, ok, New_state};
 
 handle_call({tick}, _From, State) ->
 %    error_logger:info_report(["Ramper tick."]),
     SimId = State#ramper_state.simid,
-    Current = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
+    Current = es_turbine_server:power(SimId),
     Target = State#ramper_state.target,
     Rate = State#ramper_state.rate,
     Direction = State#ramper_state.direction,

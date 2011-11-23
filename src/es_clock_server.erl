@@ -15,7 +15,10 @@
 	params/0,
 	start_link/1,
 	stop_link/1,
-	add_listener/2
+	start_ticking/1,
+	stop_ticking/1,
+	add_listener/2,
+	add_listener/1
 	]).
 
 % gen_server callbacks
@@ -68,8 +71,44 @@ start_link(SimId) ->
 stop_link(SimId) ->
     gen_server:call(?SERVER(SimId), stop).
 
+%%-------------------------------------------------------------------
+%% @doc Makes the clock server start sending ticks.
+%%
+%% @spec start_ticking(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+start_ticking(SimId) ->
+    gen_server:call(?SERVER(SimId), {action, ticking, start}).
+
+%%-------------------------------------------------------------------
+%% @doc Makes the clock server stop sending ticks.
+%%
+%% @spec stop_ticking(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+stop_ticking(SimId) ->
+    gen_server:call(?SERVER(SimId), {action, ticking, stop}).
+
+%%-------------------------------------------------------------------
+%% @doc Adds a listener to internal list of processes to be ticked.
+%%
+%% @spec add_listener(SimId::integer(), Listener) -> ok
+%% where
+%%  Listener = pid() | {global, {SimId::integer(), Module::string()}}
+%% @end
+%%-------------------------------------------------------------------
 add_listener(SimId, Listener) ->
     gen_server:call(?SERVER(SimId), {add_listener, Listener}).
+
+%%-------------------------------------------------------------------
+%% @doc Adds the caller as a listener to internal list of processes
+%%      to be ticked.
+%%
+%% @spec add_listener(SimId::integer()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+add_listener(SimId) ->
+    gen_server:call(?SERVER(SimId), {add_listener, self()}).
 
 
 %%%==================================================================

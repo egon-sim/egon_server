@@ -87,8 +87,7 @@ dilute(SimId, Volume) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    io:format("ProcName: ~p~n", [process_info(self(), registered_name)]),
-    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
+    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
     {ok, #makeup_buffer_state{simid = SimId, buffers=[]}}.
 
 handle_call({get, buffers}, _From, State) ->

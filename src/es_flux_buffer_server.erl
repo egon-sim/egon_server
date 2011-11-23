@@ -20,7 +20,7 @@ params() -> [].
 start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
 
 init([SimId]) -> 
-    gen_server:call({global, {SimId, es_clock_server}}, {add_listener, {global, {SimId, ?MODULE}}}),
+    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
     {ok, #flux_buffer_state{simid = SimId, target=undef}}.
 
 handle_call({get, cycle_len}, _From, State) ->

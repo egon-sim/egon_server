@@ -27,7 +27,7 @@ init([SimId]) -> {ok, #w7300_state{simid = SimId}}.
 
 handle_call({get, tref}, _From, State) ->
    SimId = State#w7300_state.simid,
-   Power = gen_server:call({global, {SimId, es_turbine_server}}, {get, power}),
+   Power = es_turbine_server:power(SimId),
    Noload_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
    Fullpower_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
    Tref = Noload_Tavg + (Fullpower_Tavg - Noload_Tavg) * (Power / 100),
