@@ -8,8 +8,7 @@
 -module(es_simulator_tracker_server).
 
 -behaviour(gen_server).
--define(SERVER, ?MODULE).
--import(io_lib).
+-define(SERVER, {global, ?MODULE}).
 
 % API
 -export([
@@ -54,7 +53,7 @@
 %% @end
 %%-------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link(?SERVER, ?MODULE, [], []).
 
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
