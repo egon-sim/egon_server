@@ -68,11 +68,10 @@ call(_State, Req) ->
     {unknown_request, Req}.
 
 
-start_new_simulator(Params) ->
+start_new_simulator([Name, Desc, User]) ->
 %    io:format("starting children... "),
-    case gen_server:call(es_simulator_tracker_server, {start_simulator, Params}) of
+    case es_simulator_tracker_server:start_new_simulator(Name, Desc, User) of
         {ok, SimId} ->
-	    [_, _, User] = Params,
             connect_to_simulator([SimId, User]);
 	{error, shutdown} -> 
 	    {error_starting_child}; % TODO: {error, starting_child_failed}
@@ -80,9 +79,8 @@ start_new_simulator(Params) ->
 	    {unknown_error, Other} % TODO: {error, Other}
     end.
 
-connect_to_simulator(Params) ->
-    [SimId|_] = Params,
-    case gen_server:call(es_simulator_tracker_server, {connect_to_simulator, Params}) of
+connect_to_simulator([SimId, User]) ->
+    case es_simulator_tracker_server:connect_to_simulator(SimId, User) of
         {ok, [{SimId, _, Port}]} ->
 	    {connected, SimId, Port};
 	Other ->

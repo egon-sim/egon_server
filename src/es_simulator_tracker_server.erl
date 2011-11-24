@@ -16,6 +16,8 @@
 	start_link/0,
 	stop_link/0,
 	simulators/0,
+	start_new_simulator/3,
+	connect_to_simulator/2,
 	sim_info/1,
 	sim_clients/1,
 	stop_simulator/1
@@ -73,6 +75,27 @@ simulators() ->
     gen_server:call(?SERVER, {get, simulators}).
 
 %%-------------------------------------------------------------------
+%% @doc Starts a new simulator instance
+%%
+%% @spec start_new_simulator(Name::string(), Description::string(), 
+%%       User::string()) ->
+%%       {ok, SimId::integer()} | {error, shutdown}
+%% @end
+%%-------------------------------------------------------------------
+start_new_simulator(Name, Desc, User) ->
+    gen_server:call(?SERVER, {start_simulator, Name, Desc, User}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns simulator manifest for given simulator.
+%%
+%% @spec connect_to_simulator(SimId::integer(), User::string()) ->
+%%       {ok, [SimId::integer(), none, Port::integer()]}
+%% @end
+%%-------------------------------------------------------------------
+connect_to_simulator(SimId, User) ->
+    gen_server:call(?SERVER, {connect_to_simulator, SimId, User}).
+
+%%-------------------------------------------------------------------
 %% @doc Returns simulator manifest for given simulator.
 %%
 %% @spec sim_info(SimId::integer()) -> {ok, #simulator_manifest}
@@ -111,7 +134,7 @@ stop_simulator(SimId) ->
 init([]) -> 
     {ok, #tracker_state{simulators = [], next_id = 1}}.
 
-handle_call({start_simulator, [Name, Desc, User]}, _From, State) -> 
+handle_call({start_simulator, Name, Desc, User}, _From, State) -> 
 %% State#tracker_state.next_id should never be reused, SimId should be unique for every simulator instance
     Sims = State#tracker_state.simulators,
     SimId = State#tracker_state.next_id,
@@ -136,7 +159,7 @@ handle_call({stop_simulator, SimId}, _From, State) ->
     NewState = remove_sim(SimId, State),
     {reply, {ok, stopped}, NewState};
 
-handle_call({connect_to_simulator, [SimId, User]}, _From, State) -> 
+handle_call({connect_to_simulator, SimId, User}, _From, State) -> 
     case sim_info(SimId, State) of
         {ok, _} ->
 	    {ok, Port} = es_interface_dispatcher:start_child(SimId, User),

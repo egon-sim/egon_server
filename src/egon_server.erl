@@ -25,13 +25,11 @@ pause(Sim) ->
 new_sim() ->
     new_sim(doc).
 
-new_sim(Name, Desc, User) ->
-    new_sim([Name, Desc, User]).
-
 new_sim(doc) ->
-    "new_sim(Name, Desc, User)";
-new_sim(Params) ->
-    gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
+    "new_sim(Name, Desc, User)".
+
+new_sim(Name, Desc, User) ->
+    es_simulator_tracker_server:start_new_simulator(Name, Desc, User).
 
 stop_sim(SimId) ->
     es_simulator_tracker_server:stop_simulator(SimId).
