@@ -1,12 +1,68 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server for starting and stopping simulators and for
+%%%      providing information about simulators.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_simulator_tracker_server).
--include_lib("eunit/include/eunit.hrl").
--import(io_lib).
--behaviour(gen_server).
--export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(tracker_state, {simulators, next_id}).
--record(simulator_manifest, {id, sup_pid, name, desc, owner}).
 
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+-behaviour(gen_server).
+-define(SERVER, {local, ?MODULE}).
+-import(io_lib).
+
+% API
+-export([
+	start_link/0,
+	stop_link/0
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
+-record(tracker_state, {
+			simulators,
+			next_id
+			}).
+
+-record(simulator_manifest, {
+	  	  	     id,
+	  	  	     sup_pid,
+	  	  	     name,
+	  	  	     desc,
+	  	  	     owner
+	  	  	     }).
+
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link() -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start_link() ->
+    gen_server:start_link(?SERVER, ?MODULE, [], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link() -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link() ->
+    gen_server:call(?SERVER, stop).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([]) -> 
     {ok, #tracker_state{simulators = [], next_id = 1}}.
@@ -62,7 +118,9 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
 
 sim_info(SimId, State) ->
     Sims = State#tracker_state.simulators,
@@ -105,3 +163,12 @@ remove_sim(SimId, State) ->
     Sims = State#tracker_state.simulators,
     NewSims = lists:filter(fun(Sim) -> Sim#simulator_manifest.id =/= SimId end, Sims),
     State#tracker_state{simulators = NewSims}.
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() -> ok.
+
+integration_test() -> ok.
