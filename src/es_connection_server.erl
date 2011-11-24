@@ -2,7 +2,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
--export([call/2, start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, sim_info/1, sim_clients/1, list_sims/0]).
+-export([call/2, start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 start_link(Port) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Port], []).
 
@@ -51,15 +51,18 @@ call(_State, {ask, connect_to_simulator, Params}) ->
 call(_State, {ask, stop_simulator, SimId}) ->
     es_simulator_tracker_server:stop_simulator(SimId);
 call(_State, {ask, sim_info}) ->
-    sim_info();
+    not_connected_to_a_simulator;
 call(_State, {ask, sim_info, SimId}) ->
-    sim_info(SimId);
+    {ok, Reply} = es_simulator_tracker_server:sim_info(SimId),
+    Reply;
 call(_State, {ask, sim_clients}) ->
-    sim_clients();
+    not_connected_to_a_simulator;
 call(_State, {ask, sim_clients, SimId}) ->
-    sim_clients(SimId);
+    {ok, Reply} = es_simulator_tracker_server:sim_clients(SimId),
+    Reply;
 call(_State, {ask, list_sims}) ->
-    list_sims();
+    {ok, List} = es_simulator_tracker_server:simulators(),
+    List;
 call(_State, {stop_sim, SimId}) ->
     es_simulator_tracker_server:stop_simulator(SimId);
 call(_State, {shutdown_server}) ->
@@ -86,21 +89,3 @@ connect_to_simulator([SimId, User]) ->
 	Other ->
 	    Other
     end.
-
-sim_info() ->
-    not_connected_to_a_simulator.
-
-sim_info(SimId) ->
-    {ok, Reply} = es_simulator_tracker_server:sim_info(SimId),
-    Reply.
-
-sim_clients() ->
-    not_connected_to_a_simulator.
-
-sim_clients(SimId) ->
-    {ok, Reply} = es_simulator_tracker_server:sim_clients(SimId),
-    Reply.
-
-list_sims() ->
-    {ok, List} = es_simulator_tracker_server:simulators(),
-    List.
