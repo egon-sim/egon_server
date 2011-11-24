@@ -49,7 +49,7 @@ call(_State, {ask, start_new_simulator, Params}) ->
 call(_State, {ask, connect_to_simulator, Params}) ->
     connect_to_simulator(Params);
 call(_State, {ask, stop_simulator, SimId}) ->
-    stop_simulator(SimId);
+    es_simulator_tracker_server:stop_simulator(SimId);
 call(_State, {ask, sim_info}) ->
     sim_info();
 call(_State, {ask, sim_info, SimId}) ->
@@ -61,7 +61,7 @@ call(_State, {ask, sim_clients, SimId}) ->
 call(_State, {ask, list_sims}) ->
     list_sims();
 call(_State, {stop_sim, SimId}) ->
-    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId});
+    es_simulator_tracker_server:stop_simulator(SimId);
 call(_State, {shutdown_server}) ->
     es_master_server:shutdown();
 call(_State, Req) ->
@@ -88,10 +88,6 @@ connect_to_simulator(Params) ->
 	Other ->
 	    Other
     end.
-
-stop_simulator(SimId) ->
-    {ok, stopped} = gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}),
-    {ok, stopped}.
 
 sim_info() ->
     not_connected_to_a_simulator.

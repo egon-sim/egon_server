@@ -14,7 +14,8 @@
 % API
 -export([
 	start_link/0,
-	stop_link/0
+	stop_link/0,
+	stop_simulator/1
 	]).
 
 % gen_server callbacks
@@ -58,6 +59,15 @@ start_link() ->
 %%-------------------------------------------------------------------
 stop_link() ->
     gen_server:call(?SERVER, stop).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the simulator instance.
+%%
+%% @spec stop_simulator(SimId::integer()) -> {ok, stopped}
+%% @end
+%%-------------------------------------------------------------------
+stop_simulator(SimId) ->
+    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}).
 
 
 %%%==================================================================

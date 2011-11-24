@@ -34,7 +34,7 @@ new_sim(Params) ->
     gen_server:call(es_simulator_tracker_server, {start_simulator, Params}).
 
 stop_sim(SimId) ->
-    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}).
+    es_simulator_tracker_server:stop_simulator(SimId).
 
 
 list_sims() ->
