@@ -8,13 +8,16 @@
 -module(es_simulator_tracker_server).
 
 -behaviour(gen_server).
--define(SERVER, {local, ?MODULE}).
+-define(SERVER, ?MODULE).
 -import(io_lib).
 
 % API
 -export([
 	start_link/0,
 	stop_link/0,
+	simulators/0,
+	sim_info/1,
+	sim_clients/1,
 	stop_simulator/1
 	]).
 
@@ -49,7 +52,7 @@
 %% @end
 %%-------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link(?SERVER, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
@@ -61,13 +64,44 @@ stop_link() ->
     gen_server:call(?SERVER, stop).
 
 %%-------------------------------------------------------------------
+%% @doc Returns list of simulator instances on this server.
+%%
+%% @spec simulators() -> {ok, [#simulator_manifest]}
+%% @end
+%%-------------------------------------------------------------------
+simulators() ->
+    gen_server:call(?SERVER, {get, simulators}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns simulator manifest for given simulator.
+%%
+%% @spec sim_info(SimId::integer()) -> {ok, #simulator_manifest}
+%% @end
+%%-------------------------------------------------------------------
+sim_info(SimId) ->
+    gen_server:call(?SERVER, {get, sim_info, SimId}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns clients connected to given simulator.
+%%
+%% @spec sim_clients(SimId::integer()) -> {ok, [{User, Remote, Local}]}
+%% where
+%%    User = string() % username of client
+%%    Remote = inet:peername/1 % peername of client socket
+%%    Local = inet:sockname/1 % sockname of client socket
+%% @end
+%%-------------------------------------------------------------------
+sim_clients(SimId) ->
+    gen_server:call(?SERVER, {get, sim_clients, SimId}).
+
+%%-------------------------------------------------------------------
 %% @doc Stops the simulator instance.
 %%
 %% @spec stop_simulator(SimId::integer()) -> {ok, stopped}
 %% @end
 %%-------------------------------------------------------------------
 stop_simulator(SimId) ->
-    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId}).
+    gen_server:call(?SERVER, {stop_simulator, SimId}).
 
 
 %%%==================================================================
@@ -118,7 +152,7 @@ handle_call({get, sim_info, SimId}, _From, State) ->
     {reply, sim_info(SimId, State), State};
 
 handle_call({get, sim_clients, SimId}, _From, State) -> 
-    Reply = sim_clients(SimId),
+    Reply = sim_clients_(SimId),
     {reply, {ok, Reply}, State}.
 
 %handle_call(_Request, _From, State) -> {reply, ok, State}.
@@ -148,7 +182,7 @@ sim_info(SimId, State) ->
 	    {error, other}
     end.
 
-sim_clients(SimId) ->
+sim_clients_(SimId) ->
     Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
     io:format("es_simulator_tracker_server:sim_clients: ~p", [Reply]),
     Reply.

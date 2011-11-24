@@ -93,16 +93,16 @@ sim_info() ->
     not_connected_to_a_simulator.
 
 sim_info(SimId) ->
-    {ok, Reply} = gen_server:call(es_simulator_tracker_server, {get, sim_info, SimId}),
+    {ok, Reply} = es_simulator_tracker_server:sim_info(SimId),
     Reply.
 
 sim_clients() ->
     not_connected_to_a_simulator.
 
 sim_clients(SimId) ->
-    {ok, Reply} = gen_server:call(es_simulator_tracker_server, {get, sim_clients, SimId}),
+    {ok, Reply} = es_simulator_tracker_server:sim_clients(SimId),
     Reply.
 
 list_sims() ->
-    {ok, List} = gen_server:call(es_simulator_tracker_server, {get, simulators}),
+    {ok, List} = es_simulator_tracker_server:simulators(),
     List.
