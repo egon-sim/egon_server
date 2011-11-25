@@ -14,6 +14,7 @@ General features:
 *- sanity check when egon_server starts (egon_client:client_test/0 could be a good sanity check)
 #0 changing simulation speed
 #- add logging to configuration file
+#0 use gen_fsm and gen_event where applicable
 
 Userfriendlyness:
 #0 generating client-server protocol from documentation (list all handle_call methods which have some modifier in it's documentation)
@@ -33,6 +34,7 @@ Removing dirty hacks:
 %0 remove timer:sleep from egon_server:sim_loaded
 %0 move io:format to error_handler:info_report
 #0 integrate ramper into turbine
+%- change calls to es_clock_server:add_listener/2 to es_clock_server:add_listener/1
 
 MAJOR FEATURES ROADMAP:
 1) steam generators

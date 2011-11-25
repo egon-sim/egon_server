@@ -65,12 +65,12 @@ call(#interface_state{simid = SimId}, {action, Server, Param, Args}) ->
     gen_server:call({global, {SimId, Server}}, {action, Param, Args});
 
 call(#interface_state{simid = SimId}, {stop_sim, SimId}) ->
-    gen_server:call(es_simulator_tracker_server, {stop_simulator, SimId});
+    es_simulator_tracker_server:stop_simulator(SimId);
 
 call(#interface_state{simid = SimId}, {ask, sim_info}) ->
-    es_connection_server:sim_info(SimId);
+    es_simulator_tracker_server:sim_info(SimId);
 call(_, {ask, sim_info, SimId}) ->
-    es_connection_server:sim_info(SimId);
+    es_simulator_tracker_server:sim_info(SimId);
 
 call(#interface_state{simid = SimId} = State, {ask, sim_clients}) ->
     call(State, {ask, sim_clients, SimId});
@@ -80,4 +80,4 @@ call(_, {ask, sim_clients, SimId}) ->
     es_simulator_tracker_server:sim_clients(SimId);
 
 call(_, {ask, list_sims}) ->
-    es_connection_server:list_sims().
+    es_simulator_tracker_server:list_sims().
