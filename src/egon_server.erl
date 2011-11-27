@@ -16,11 +16,10 @@ restart() ->
     start().
 
 run(Sim) ->
-    gen_server:call({global, {Sim, es_config_server}}, {unfreaze_sim}).
+    es_config_server:unfreaze(Sim).
 
 pause(Sim) ->
-    gen_server:call({global, {Sim, es_config_server}}, {freaze_sim}).
-
+    es_config_server:freaze(Sim).
 
 new_sim() ->
     new_sim(doc).
