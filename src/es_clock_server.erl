@@ -18,7 +18,9 @@
 	start_ticking/1,
 	stop_ticking/1,
 	add_listener/2,
-	add_listener/1
+	add_listener/1,
+	second_to_ticks/1,
+	seconds_to_ticks/2
 	]).
 
 % gen_server callbacks
@@ -109,6 +111,28 @@ add_listener(SimId, Listener) ->
 %%-------------------------------------------------------------------
 add_listener(SimId) ->
     gen_server:call(?SERVER(SimId), {add_listener, self()}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns number of ticks that equivalent to a number of
+%%      seconds of real time.
+%%
+%% @spec seconds_to_ticks(SimId::integer(), Seconds::integer())
+%%       -> integer()
+%% @end
+%%-------------------------------------------------------------------
+seconds_to_ticks(SimId, Seconds) ->
+    gen_server:call(?SERVER(SimId), {get, seconds_to_ticks, Seconds}).
+
+%%-------------------------------------------------------------------
+%% @doc Returns number of ticks that equivalent to one second of
+%%      real time.
+%%
+%% @spec second_to_ticks(SimId::integer())
+%%       -> integer()
+%% @end
+%%-------------------------------------------------------------------
+second_to_ticks(SimId) ->
+    seconds_to_ticks(SimId, 1).
 
 
 %%%==================================================================
