@@ -1,23 +1,66 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_flux_buffer_server).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(gen_server).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 -import(timer).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
+
+% API
+-export([
+	start_link/1,
+	stop_link/1,
+	set_flux/2
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
 -record(flux_buffer_state, {simid, target, cycle_len, flux_diff_per_cycle}).
 
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
 %%-------------------------------------------------------------------
-%% @doc Returns list of available parameters.
+%% @doc Starts the server.
 %%
-%% @spec params() -> [Param]
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
 %% where
-%%  Param = {Parameter_id, Function_name}
-%%  Parameter_id = term()
-%%  Function_name = term()
+%%  Pid = pid()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [].
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
 
-start_link(SimId) -> gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+%%-------------------------------------------------------------------
+%% @doc Sets new target for flux_buffer_server.
+%%
+%% @spec set_flux(SimId::integer(), Power:float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+set_flux(SimId, Power) ->
+    gen_server:call(?SERVER(SimId), {set, flux, Power}).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> 
     es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
@@ -78,4 +121,13 @@ handle_cast(_Msg, State) -> {noreply, State}.
 handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() -> ok.
+
+integration_test() -> ok.
 

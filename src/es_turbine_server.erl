@@ -116,7 +116,7 @@ handle_call({get, power}, _From, State) ->
 handle_call({set, power, Power}, _From, State) ->
     New_state = State#turbine_state{power=Power},
     SimId = State#turbine_state.simid,
-    gen_server:call({global, {SimId, es_flux_buffer_server}}, {set, flux, Power}),
+    es_flux_buffer_server:set_flux(SimId, Power),
     {reply, ok, New_state};
 
 handle_call({get, go}, _From, State) ->
