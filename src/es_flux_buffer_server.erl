@@ -1,7 +1,8 @@
 %%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @doc Server for gradually changing flux of the core when step
+%%%      change of turbine power occurs.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_flux_buffer_server).
