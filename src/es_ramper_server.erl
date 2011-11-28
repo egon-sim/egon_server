@@ -1,31 +1,69 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_ramper_server).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0]).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+
+% API
+-export([
+	start_link/1,
+	stop_link/1,
+	start_ramping/4
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
 -record(ramper_state, {simid, turbine, target, rate, direction}).
 
-start_link(SimId) -> 
-    gen_server:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId], []).
+
+%%%==================================================================
+%%% API
+%%%==================================================================
 
 %%-------------------------------------------------------------------
-%% @doc Returns list of available parameters.
+%% @doc Starts the server.
 %%
-%% @spec params() -> [Param]
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
 %% where
-%%  Param = {Parameter_id, Function_name}
-%%  Parameter_id = term()
-%%  Function_name = term()
+%%  Pid = pid()
 %% @end
 %%-------------------------------------------------------------------
-params() -> [].
+start_link(SimId) ->
+    gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
+
+%%-------------------------------------------------------------------
+%% @doc Stops the server.
+%%
+%% @spec stop_link(SimId::integer()) -> stopped
+%% @end
+%%-------------------------------------------------------------------
+stop_link(SimId) ->
+    gen_server:call(?SERVER(SimId), stop).
+
+%%-------------------------------------------------------------------
+%% @doc Starts ramping.
+%%
+%% @spec start_ramping(SimId::integer(), Current::float(),
+%%       Target::float(), Rate::float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+start_ramping(SimId, Current, Target, Rate) ->
+    gen_server:call(?SERVER(SimId), {start_ramp, Current, Target, Rate}).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) ->
     {ok, #ramper_state{simid = SimId, turbine=es_turbine_server, target=none, rate=none, direction=none}}.
-
-stop(SimId, Target, Rate) ->
-    ok = gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, stop}),
-    Power = es_turbine_server:power(SimId),
-    error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
 
 handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
 %    error_logger:info_report(["Start ramping."]),
@@ -69,3 +107,21 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
+
+%%%==================================================================
+%%% Internal functions
+%%%==================================================================
+
+stop(SimId, Target, Rate) ->
+    ok = gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, stop}),
+    Power = es_turbine_server:power(SimId),
+    error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
+
+%%%==================================================================
+%%% Test functions
+%%%==================================================================
+-include_lib("eunit/include/eunit.hrl").
+
+unit_test() -> ok.
+
+integration_test() -> ok.
