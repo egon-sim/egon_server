@@ -18,6 +18,8 @@
 	set_flux/2,
 	burnup/1,
 	boron/1,
+	borate/2,
+	dilute/2,
 	stop_link/1
 	]).
 
@@ -112,6 +114,24 @@ burnup(SimId) ->
 %%-------------------------------------------------------------------
 boron(SimId) ->
     gen_server:call(?SERVER(SimId), {get, boron}).
+
+%%-------------------------------------------------------------------
+%% @doc Initiates boration of RCS for given ammount of boron.
+%%
+%% @spec borate(SimId::integer(), Ppm::float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+borate(SimId, Ppm) ->
+    gen_server:call(?SERVER(SimId), {action, borate, Ppm}).
+
+%%-------------------------------------------------------------------
+%% @doc Initiates dilution of RCS for given ammount of boron.
+%%
+%% @spec dilute(SimId::integer(), Ppm::float()) -> ok
+%% @end
+%%-------------------------------------------------------------------
+dilute(SimId, Ppm) ->
+    gen_server:call(?SERVER(SimId), {action, dilute, Ppm}).
 
 
 %%%==================================================================
