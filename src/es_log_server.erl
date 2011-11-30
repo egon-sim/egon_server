@@ -503,36 +503,12 @@ collect_parameters(State) ->
     case application:get_application() of
         {ok, App} ->
 	    Log = application:get_env(App, log),
-	    Modules = case Log of
-		{ok, all} ->
-		    collect_modules_sup({global, {SimId, es_simulator_sup}});
-		_ ->
-		    []
-	    end,
-	    Params = lists:merge(lists:map(fun(Module) -> query_module(SimId, Module) end, Modules)),
-	    State#log_state{parameters=Params};
+	    {ok, Params} = es_lib:collect_parameters(SimId, Log),
+	    Log_params = lists:map(fun({Id, Desc, Module, Function}) -> #log_parameter{id = Id, description = Desc, mfa = {Module, Function, [SimId]}} end, Params),
+	    State#log_state{parameters=Log_params};
 	undefined ->
 	    State
     end.
-
-collect_modules_sup(SupRef) ->
-    Children = supervisor:which_children(SupRef),
-    lists:flatten(lists:map(fun(ChildSpec) -> collect_modules(ChildSpec) end, Children)).
-
-collect_modules({_,_,worker,Modules}) ->
-    Modules;
-collect_modules({_,Child,supervisor,_}) ->
-    collect_modules_sup(Child).
-
-query_module(SimId, Module) ->
-    Resp = (catch Module:params()),
-    Params = case Resp of
-	{'EXIT', _} ->
-	    [];
-	_ ->
-	    Resp
-    end,
-    lists:map(fun({Id, Desc, Function}) -> #log_parameter{id = Id, description = Desc, mfa = {Module, Function, [SimId]}} end, Params).
 
 atomify(String) ->
     list_to_atom(lists:map(
