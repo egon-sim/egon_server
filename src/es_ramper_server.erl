@@ -113,7 +113,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%==================================================================
 
 stop(SimId, Target, Rate) ->
-    ok = gen_server:call({global, {SimId, es_turbine_server}}, {action, ramp, stop}),
+    ok = es_turbine_server:stop_ramp(SimId),
     Power = es_turbine_server:power(SimId),
     error_logger:info_report(["Stopping ramper", {current, Power}, {target, Target}, {rate, Rate}]).
 

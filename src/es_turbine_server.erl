@@ -14,6 +14,9 @@
 -export([
 	params/0,
 	start_link/1,
+	start_ramp/1,
+	start_ramp/3,
+	stop_ramp/1,
 	stop_link/1,
 	power/1,
 	set_power/2,
@@ -89,6 +92,9 @@ start_ramp(SimId, Target, Rate) ->
 	true ->
 	    start_ramp(SimId) % returning error message
     end.
+
+stop_ramp(SimId) ->
+    gen_server:call(?SERVER(SimId), {action, ramp, stop}).
 
 power(SimId) -> 
     gen_server:call(?SERVER(SimId), {get, power}).
