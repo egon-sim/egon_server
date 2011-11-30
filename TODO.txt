@@ -6,6 +6,7 @@ BUGS:
 
 Protocol:
 *- assemble by hand a list of messages which es_interface_server can send to other servers
+*0 es_interface_server should do es_lib:collect_parameters(SimId, all) and then answer to {get, Id} messages
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
 %+ more restrictive packet definition regexp in es_lib_tcp, with error recovery
 
