@@ -55,7 +55,7 @@
 %% @end
 %%-------------------------------------------------------------------
 start_link(Host, Port, Username) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Host, Port, Username], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Host, Port, Username], []).
 
 %%-------------------------------------------------------------------
 %% @doc Stops the server.
@@ -110,7 +110,7 @@ conn_to_sim(SimId) ->
 %% @end
 %%-------------------------------------------------------------------
 disconnect() ->
-    gen_server:call(?MODULE, {disconnect}).
+    gen_server:call(?SERVER, {disconnect}).
 
 %%-------------------------------------------------------------------
 %% @doc Shuts egon_server system down.
@@ -119,7 +119,7 @@ disconnect() ->
 %% @end
 %%-------------------------------------------------------------------
 shutdown_server() ->
-    gen_server:call(?MODULE, {shutdown_server}).
+    gen_server:call(?SERVER, {shutdown_server}).
 
 %%-------------------------------------------------------------------
 %% @doc Sends an arbitrary message to egon_server.
@@ -130,7 +130,7 @@ shutdown_server() ->
 %% @end
 %%-------------------------------------------------------------------
 call(Message) ->
-    gen_server:call(?MODULE, {send, Message}).
+    gen_server:call(?SERVER, {send, Message}).
 
 %%-------------------------------------------------------------------
 %% @doc Return simulator_manifest for simulator to which egon_client
