@@ -89,10 +89,10 @@ handle_call({tick}, _From, State) ->
     New = Current + (Direction * Rate),
     case Direction * (New - Target) =< 0 of
         true -> 
-		gen_server:call({global, {SimId, es_turbine_server}}, {set, power, New}),
+		es_turbine_server:set_power(SimId, New),
 		Retval = ok;
         _ -> 
-		gen_server:call({global, {SimId, es_turbine_server}}, {set, power, Target}),
+		es_turbine_server:set_power(SimId, Target),
 		stop(SimId, Target, Rate),
 		Retval = rem_listener
     end,

@@ -16,9 +16,13 @@
 	start_link/1,
 	stop_link/1,
 	power/1,
+	set_power/2,
 	go/1,
+	set_go/2,
 	target/1,
-	rate/1
+	set_target/2,
+	rate/1,
+	set_rate/2
 	]).
 
 
@@ -89,8 +93,14 @@ start_ramp(SimId, Target, Rate) ->
 power(SimId) -> 
     gen_server:call(?SERVER(SimId), {get, power}).
 
+set_power(SimId, Value) -> 
+    gen_server:call(?SERVER(SimId), {set, power, Value}).
+
 go(SimId) -> 
     gen_server:call(?SERVER(SimId), {get, go}).
+
+set_go(SimId, Value) -> 
+    gen_server:call(?SERVER(SimId), {set, go, Value}).
 
 target(SimId) -> 
     gen_server:call(?SERVER(SimId), {get, target}).
