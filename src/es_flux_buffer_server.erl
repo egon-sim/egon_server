@@ -64,7 +64,7 @@ set_flux(SimId, Power) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
+    es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     {ok, #flux_buffer_state{simid = SimId, target=undef}}.
 
 handle_call({get, cycle_len}, _From, State) ->

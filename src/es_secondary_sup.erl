@@ -1,6 +1,7 @@
 -module(es_secondary_sup).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(supervisor).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
 %% API
 -export([start_link/1]).
@@ -9,7 +10,7 @@
 -export([init/1]).
 
 start_link(SimId) ->
-   supervisor:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId]).
+   supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
 
 init([SimId]) ->
    Turbine = {es_turbine_server, {es_turbine_server, start_link, [SimId]},

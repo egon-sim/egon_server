@@ -73,7 +73,7 @@ handle_call({start_ramp, Current, Target, Rate}, _From, State) ->
     end,
     New_state = State#ramper_state{target=Target, rate=Rate, direction=Direction},
     SimId = State#ramper_state.simid,
-    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
+    es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     {reply, ok, New_state};
 
 handle_call({tick}, _From, State) ->

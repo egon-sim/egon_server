@@ -320,7 +320,7 @@ handle_cast({set, cycle_len, Val}, State) when State#log_state.status =:= runnin
     Old_timer = State#log_state.timer,
 
     timer:cancel(Old_timer),
-    {ok, New_timer} = timer:apply_interval(Val, gen_server, call, [{global, {SimId, ?MODULE}}, {tick}]),
+    {ok, New_timer} = timer:apply_interval(Val, gen_server, call, [?SERVER(SimId), {tick}]),
     timer:start(),
 
     {noreply, State#log_state{timer=New_timer, cycle_len=Val}};

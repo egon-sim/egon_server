@@ -87,7 +87,7 @@ dilute(SimId, Volume) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
+    es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     {ok, #makeup_buffer_state{simid = SimId, buffers=[]}}.
 
 handle_call({get, buffers}, _From, State) ->
