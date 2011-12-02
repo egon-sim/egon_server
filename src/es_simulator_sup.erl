@@ -1,16 +1,23 @@
 -module(es_simulator_sup).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(supervisor).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
 %% API
--export([start_link/1]).
+-export([
+	 start_link/1,
+	 children/1
+	]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
 start_link(SimId) ->
    io:format("Starting new simulator (Id: ~p).~n", [SimId]),
-   supervisor:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId]).
+   supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
+
+children(SimId) ->
+    supervisor:which_children(?SERVER(SimId)).
 
 init([SimId]) ->
    Utility_sup = {es_utility_sup, {es_utility_sup, start_link, [SimId]},

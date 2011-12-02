@@ -205,7 +205,10 @@ sim_info(SimId, State) ->
     end.
 
 sim_clients_(SimId) ->
-    Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
+    Reply = lists:map(
+	      fun({_, S, _, _}) -> client_info(S) end,
+	      es_interface_dispatcher:children(SimId)
+	     ),
     io:format("es_simulator_tracker_server:sim_clients: ~p", [Reply]),
     Reply.
 

@@ -38,7 +38,7 @@ list_sims() ->
     List.
 
 sim_loaded(SimId) ->
-    supervisor:which_children({global, {SimId, es_simulator_sup}}),
+    es_simulator_sup:children(SimId),
     timer:sleep(100),
     true.
 

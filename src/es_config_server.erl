@@ -90,7 +90,7 @@ init([SimId]) ->
 
 handle_call({get, running_servers_list}, _From, State) ->
     SimId = State#config_state.simid,
-    W = supervisor:which_children({global, {SimId, es_simulator_sup}}),
+    W = es_simulator_sup:children(SimId),
     F = lists:filter(fun({_, Def, _, _}) -> is_pid(Def) end, W),
     L = lists:map(fun({Name, _, _, _}) -> Name end, F),
     {reply, L, State};
@@ -113,7 +113,7 @@ handle_cast(_Msg, State) -> {noreply, State}.
 
 handle_info(timeout, State) ->
     SimId = State#config_state.simid,
-    supervisor:which_children({global, {SimId, es_simulator_sup}}),
+    es_simulator_sup:children(SimId),
     set_up_defaults(State),    
     {noreply, State};
 
