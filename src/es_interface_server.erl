@@ -2,9 +2,16 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("include/es_tcp_states.hrl").
 -behaviour(gen_server).
--export([call/2, start_link/2, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([call/2, start_link/2, client_info/1, port/1]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 start_link(SimId, User) -> gen_server:start_link(?MODULE, [SimId, User], []).
+
+client_info(Pid) ->
+    gen_server:call(Pid, {get, client_info}).
+
+port(Child) ->
+    gen_server:call(Child, {get, port}).
 
 init([SimId, User]) -> 
     {ok, LSock} = gen_tcp:listen(0, [{active, true}]),

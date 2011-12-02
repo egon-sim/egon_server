@@ -12,7 +12,7 @@ start_child(SimId, User) ->
     io:format("Starting interface server.~n"),
     {ok, Child} = supervisor:start_child(?SERVER(SimId), [User]),
     io:format("New interface server: ~p~n", [Child]),
-    Port = gen_server:call(Child, {get, port}),
+    Port = es_interface_server:port(Child),
     io:format("Got port ~p.~n", [Port]),
     gen_server:cast(Child, {listen}),
     {ok, Port}.

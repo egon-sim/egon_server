@@ -206,14 +206,11 @@ sim_info(SimId, State) ->
 
 sim_clients_(SimId) ->
     Reply = lists:map(
-	      fun({_, S, _, _}) -> client_info(S) end,
+	      fun({_, Pid, _, _}) -> es_interface_server:client_info(Pid) end,
 	      es_interface_dispatcher:children(SimId)
 	     ),
     io:format("es_simulator_tracker_server:sim_clients: ~p", [Reply]),
     Reply.
-
-client_info(Pid) ->
-    gen_server:call(Pid, {get, client_info}).
 
 get_pid(SimId, State) ->
     Sims = State#tracker_state.simulators,

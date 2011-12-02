@@ -9,6 +9,8 @@ Protocol:
 *0 es_interface_server should do es_lib:collect_parameters(SimId, all) and then answer to {get, Id} messages
 #0 es_makeup_buffer_server {action, _, [RCS, VADD]} transform to {action, _, VADD} - beware of deadlock with es_core_server
 %+ more restrictive packet definition regexp in es_lib_tcp, with error recovery
+*- change snapshot loading in es_config_server.erl from gen_server:call({global, {SimId, Server}}, {set, Parm, Val}) to Module:Fun(SimId, Val)
+
 
 General features:
 *+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)
