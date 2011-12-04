@@ -1,9 +1,16 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Application behaviour module.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_app).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(application).
+
 -export([
-   start/2,
-   stop/1
+        start/2,
+        stop/1
 ]).
 
 start(_Type, _StartArgs) ->
