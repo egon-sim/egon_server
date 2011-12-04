@@ -88,7 +88,7 @@ start_new_simulator(Name, Desc, User) ->
 %% @doc Returns simulator manifest for given simulator.
 %%
 %% @spec connect_to_simulator(SimId::integer(), User::string()) ->
-%%       {ok, [SimId::integer(), none, Port::integer()]}
+%%       {connected, SimId::integer(), Port::integer()}
 %% @end
 %%-------------------------------------------------------------------
 connect_to_simulator(SimId, User) ->
@@ -162,7 +162,7 @@ handle_call({connect_to_simulator, SimId, User}, _From, State) ->
     case sim_info(SimId, State) of
         {ok, _} ->
 	    {ok, Port} = es_interface_dispatcher:start_child(SimId, User),
-	    {reply, {ok, [{SimId, none, Port}]}, State};
+	    {reply, {connected, SimId, Port}, State};
 	Other ->
 	    {reply, Other, State}
     end;

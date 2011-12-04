@@ -11,6 +11,8 @@ Protocol:
 %+ more restrictive packet definition regexp in es_lib_tcp, with error recovery
 *- change snapshot loading in es_config_server.erl from gen_server:call({global, {SimId, Server}}, {set, Parm, Val}) to Module:Fun(SimId, Val)
 
+Cleanup:
+move es_connection_server:start_new_simulator/1 to es_connection_server:call/2
 
 General features:
 *+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)

@@ -46,8 +46,8 @@ start_link(Port) ->
 %%-------------------------------------------------------------------
 call(_State, {ask, start_new_simulator, Params}) ->
     start_new_simulator(Params);
-call(_State, {ask, connect_to_simulator, Params}) ->
-    connect_to_simulator(Params);
+call(_State, {ask, connect_to_simulator, [SimId, User]}) ->
+    es_simulator_tracker_server:connect_to_simulator(SimId, User);
 call(_State, {ask, stop_simulator, SimId}) ->
     es_simulator_tracker_server:stop_simulator(SimId);
 call(_State, {ask, sim_info}) ->
@@ -119,17 +119,9 @@ start_new_simulator([Name, Desc, User]) ->
 %    io:format("starting children... "),
     case es_simulator_tracker_server:start_new_simulator(Name, Desc, User) of
         {ok, SimId} ->
-            connect_to_simulator([SimId, User]);
+                es_simulator_tracker_server:connect_to_simulator(SimId, User);
 	{error, shutdown} -> 
 	    {error_starting_child}; % TODO: {error, starting_child_failed}
 	Other -> 
 	    {unknown_error, Other} % TODO: {error, Other}
-    end.
-
-connect_to_simulator([SimId, User]) ->
-    case es_simulator_tracker_server:connect_to_simulator(SimId, User) of
-        {ok, [{SimId, _, Port}]} ->
-	    {connected, SimId, Port};
-	Other ->
-	    Other
     end.
