@@ -105,7 +105,7 @@ handle_call({set, mode, manual}, _From, State) ->
     {reply, ok, State#rod_controller_state{mode=manual, speed = Speed}};
 handle_call({set, mode, auto}, _From, State) ->
     SimId = State#rod_controller_state.simid,
-    Second_to_ticks = gen_server:call({global, {SimId, es_clock_server}}, {get, seconds_to_ticks, 1}),
+    Second_to_ticks = es_clock_server:second_to_ticks(SimId),
     {In_lockup, Speed} = rod_speed(State),
     {reply, ok, State#rod_controller_state{speed=Speed, in_lockup=In_lockup, mode=auto, ticks_per_second = Second_to_ticks}};
 

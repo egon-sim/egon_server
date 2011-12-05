@@ -87,7 +87,7 @@ dilute(SimId, Volume) ->
 %%%==================================================================
 
 init([SimId]) -> 
-    es_clock_server:add_listener(SimId, {global, {SimId, ?MODULE}}),
+    es_clock_server:add_listener(SimId, ?SERVER(SimId)),
     {ok, #makeup_buffer_state{simid = SimId, buffers=[]}}.
 
 handle_call({get, buffers}, _From, State) ->
@@ -153,8 +153,13 @@ boron_diff(RCS, TNK, VADD, WADD, W) ->
 bor_dil(_SimId, []) ->
     [];
 bor_dil(SimId, [{Action, Diff} | Rest]) ->
-    io:format("~w ~n", [Diff]),    
-    gen_server:call({global, {SimId, es_core_server}}, {action, Action, 1}),
+%    io:format("~w ~n", [Diff]),
+    case Action of
+	borate ->
+	    es_core_server:borate(SimId, 1);
+	dilute ->
+	    es_core_server:dilute(SimId, 1)
+    end,
     New_diff = Diff - 1,
     if
         New_diff > 0 ->

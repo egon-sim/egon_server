@@ -88,7 +88,7 @@ start_new_simulator(Name, Desc, User) ->
 %% @doc Returns simulator manifest for given simulator.
 %%
 %% @spec connect_to_simulator(SimId::integer(), User::string()) ->
-%%       {ok, [SimId::integer(), none, Port::integer()]}
+%%       {connected, SimId::integer(), Port::integer()}
 %% @end
 %%-------------------------------------------------------------------
 connect_to_simulator(SimId, User) ->
@@ -162,7 +162,7 @@ handle_call({connect_to_simulator, SimId, User}, _From, State) ->
     case sim_info(SimId, State) of
         {ok, _} ->
 	    {ok, Port} = es_interface_dispatcher:start_child(SimId, User),
-	    {reply, {ok, [{SimId, none, Port}]}, State};
+	    {reply, {connected, SimId, Port}, State};
 	Other ->
 	    {reply, Other, State}
     end;
@@ -205,12 +205,12 @@ sim_info(SimId, State) ->
     end.
 
 sim_clients_(SimId) ->
-    Reply = lists:map(fun({_, S, _, _}) -> client_info(S) end, supervisor:which_children({global, {SimId, es_interface_dispatcher}})),
+    Reply = lists:map(
+	      fun({_, Pid, _, _}) -> es_interface_server:client_info(Pid) end,
+	      es_interface_dispatcher:children(SimId)
+	     ),
     io:format("es_simulator_tracker_server:sim_clients: ~p", [Reply]),
     Reply.
-
-client_info(Pid) ->
-    gen_server:call(Pid, {get, client_info}).
 
 get_pid(SimId, State) ->
     Sims = State#tracker_state.simulators,

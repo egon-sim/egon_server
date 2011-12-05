@@ -1,6 +1,7 @@
 -module(es_primary_sup).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(supervisor).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
 %% API
 -export([start_link/1]).
@@ -9,7 +10,7 @@
 -export([init/1]).
 
 start_link(SimId) ->
-   supervisor:start_link({global, {SimId, ?MODULE}}, ?MODULE, [SimId]).
+   supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
 
 init([SimId]) ->
    Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, [SimId]},

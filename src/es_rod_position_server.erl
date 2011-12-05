@@ -113,7 +113,7 @@ control_position(SimId) ->
 %% @doc Returns value of control rod group positions as a string
 %%      containing an array.
 %%
-%% @spec control_position_array_str(SimId::integer()) -> [integer()]
+%% @spec control_position_array_str(SimId::integer()) -> string()
 %% @end
 %%-------------------------------------------------------------------
 control_position_array_str(SimId) ->
