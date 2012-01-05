@@ -8,7 +8,6 @@
 
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
--import(timer).
 
 % API
 -export([

@@ -9,7 +9,6 @@
 %%%------------------------------------------------------------------
 -module(egon_client).
 
--import(re).
 -behaviour(gen_server).
 -define(SERVER, ?MODULE).
 

@@ -10,7 +10,6 @@
 
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
--import(es_convert).
 
 % API
 -export([

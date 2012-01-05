@@ -2,7 +2,6 @@ BUGS:
 *- es_rod_position_server:params/0 has some parameters removed (parameters which return strings)
 * egon_client:start_link documentation is wrong
 * implement egon_client:start(doc)
-*- remove all -import().s
 
 Protocol:
 *- assemble by hand a list of messages which es_interface_server can send to other servers

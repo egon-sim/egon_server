@@ -1,5 +1,4 @@
 -module(es_util).
--import(eunit).
 
 -export([run_tests/0]).
 
