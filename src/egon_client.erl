@@ -14,6 +14,8 @@
 
 % API
 -export([
+	start/1,
+	start/3,
 	start_link/3,
 	stop_link/0,
 	new_sim/2,
@@ -44,6 +46,29 @@
 %%%==================================================================
 %%% API
 %%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Alias for start_link/3
+%%
+%% @spec start(doc) -> string()
+%% @end
+%%-------------------------------------------------------------------
+start(doc) ->
+    "egon_client:start_link(Host, Port, Username).".
+
+%%-------------------------------------------------------------------
+%% @doc Alias for start_link/3
+%%
+%% @spec start(Host, Port, Username) -> {ok, Pid}
+%% where
+%%  Host = string() % hostname of host running egon_server
+%%  Port = integer() % port on which egon_server is accepting connections
+%%  Username = string() % username of client instance
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
+start(Host, Port, Username) ->
+    start_link(Host, Port, Username).
 
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
@@ -335,7 +360,7 @@ disconnect_serv(State) ->
 client_test() ->
     ?assertEqual(ok, egon_server:start()),
     {ok, Port} = application:get_env(egon_server, port),
-    {ok,_} = start_link("localhost", Port, "Test user"),
+    {ok,_} = start("localhost", Port, "Test user"),
     ?assertEqual({ok, 1}, new_sim("Test sim 1", "Simulator for purposes of unit testing")),
     ?assertEqual({ok, 2}, new_sim("Test sim 2", "Simulator for purposes of unit testing")),
     ?assertEqual({ok, 3}, new_sim("Test sim 3", "Simulator for purposes of unit testing")),
