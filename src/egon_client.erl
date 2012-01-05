@@ -48,8 +48,11 @@
 %%-------------------------------------------------------------------
 %% @doc Starts the server.
 %%
-%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% @spec start_link(Host, Port, Username) -> {ok, Pid}
 %% where
+%%  Host = string() % hostname of host running egon_server
+%%  Port = integer() % port on which egon_server is accepting connections
+%%  Username = string() % username of client instance
 %%  Pid = pid()
 %% @end
 %%-------------------------------------------------------------------
