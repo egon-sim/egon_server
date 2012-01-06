@@ -13,9 +13,9 @@
 
 % API
 -export([
-	start_link/1,
-	params/0,
-	tref/1
+	 start_link/1,
+	 params/0,
+	 tref/1
 	]).
 
 % gen_server callbacks
@@ -71,12 +71,12 @@ tref(SimId) ->
 init([SimId]) -> {ok, #w7300_state{simid = SimId}}.
 
 handle_call({get, tref}, _From, State) ->
-   SimId = State#w7300_state.simid,
-   Power = es_turbine_server:power(SimId),
-   Noload_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
-   Fullpower_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
-   Tref = Noload_Tavg + (Fullpower_Tavg - Noload_Tavg) * (Power / 100),
-   {reply, Tref, State};
+    SimId = State#w7300_state.simid,
+    Power = es_turbine_server:power(SimId),
+    Noload_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
+    Fullpower_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
+    Tref = Noload_Tavg + (Fullpower_Tavg - Noload_Tavg) * (Power / 100),
+    {reply, Tref, State};
 
 handle_call(stop, _From, Tab) -> {stop, normal, stopped, Tab}.
 

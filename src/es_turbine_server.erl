@@ -12,20 +12,20 @@
 
 % API
 -export([
-	params/0,
-	start_link/1,
-	start_ramp/1,
-	start_ramp/3,
-	stop_ramp/1,
-	stop_link/1,
-	power/1,
-	set_power/2,
-	go/1,
-	set_go/2,
-	target/1,
-	set_target/2,
-	rate/1,
-	set_rate/2
+	 params/0,
+	 start_link/1,
+	 start_ramp/1,
+	 start_ramp/3,
+	 stop_ramp/1,
+	 stop_link/1,
+	 power/1,
+	 set_power/2,
+	 go/1,
+	 set_go/2,
+	 target/1,
+	 set_target/2,
+	 rate/1,
+	 set_rate/2
 	]).
 
 
@@ -34,12 +34,12 @@
 
 % data structures
 -record(turbine_state, {
-		       simid,
-		       power,
-		       target,
-		       rate,
-		       go
-		       }).
+	  simid,
+	  power,
+	  target,
+	  rate,
+	  go
+	 }).
 
 
 %%%==================================================================
@@ -163,12 +163,12 @@ handle_call({set, rate, _Rate}, _From, State) when State#turbine_state.go =:= tr
     {reply, {error, cannot_change_rate_while_ramping}, State};
 
 handle_call({get, tref}, _From, State) -> 
-   Power = State#turbine_state.power,
-   SimId = State#turbine_state.simid,
-   No_load_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
-   Full_power_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
-   Tref = No_load_Tavg + (Full_power_Tavg - No_load_Tavg) * (Power / 100),
-   {reply, Tref, State};
+    Power = State#turbine_state.power,
+    SimId = State#turbine_state.simid,
+    No_load_Tavg = es_curvebook_server:pls(SimId, no_load_tavg),
+    Full_power_Tavg = es_curvebook_server:pls(SimId, full_power_tavg),
+    Tref = No_load_Tavg + (Full_power_Tavg - No_load_Tavg) * (Power / 100),
+    {reply, Tref, State};
 
 handle_call({action, ramp, start}, _From, State) when State#turbine_state.go =:= false ->
     error_logger:info_report(["Starting turbine motion."]),
@@ -207,47 +207,47 @@ unit_test() ->
 
 
 integration_test_() -> {timeout, 20, [fun () ->
-    ?assertEqual(ok, egon_server:start()),
-    {ok, SimId} = egon_server:new_sim("Test_server", "Simulator started by test function", "Tester"),
-    ?assertEqual(true, egon_server:sim_loaded(SimId)),
+        ?assertEqual(ok, egon_server:start()),
+        {ok, SimId} = egon_server:new_sim("Test_server", "Simulator started by test function", "Tester"),
+        ?assertEqual(true, egon_server:sim_loaded(SimId)),
 
-    ?assertEqual(ok, egon_server:run(SimId)),
+        ?assertEqual(ok, egon_server:run(SimId)),
 
-    ?assertEqual(100, power(SimId)),
-    ?assertEqual(false, go(SimId)),
-    ?assertEqual(80, target(SimId)),
-    ?assertEqual(1, rate(SimId)),
+        ?assertEqual(100, power(SimId)),
+        ?assertEqual(false, go(SimId)),
+        ?assertEqual(80, target(SimId)),
+        ?assertEqual(1, rate(SimId)),
 
-    ?assertEqual(ok, start_ramp(SimId, 70, 5)),
-        
-    ?assertEqual(70, target(SimId)),
-    ?assertEqual(5, rate(SimId)),
+        ?assertEqual(ok, start_ramp(SimId, 70, 5)),
 
-    ?assertEqual({error, already_ramping}, start_ramp(SimId, 51, 5)),
-    timer:sleep(4000),
-    ?assertEqual({error, already_ramping}, start_ramp(SimId, 52, 5)),
+        ?assertEqual(70, target(SimId)),
+        ?assertEqual(5, rate(SimId)),
 
-    ?assertEqual(true, go(SimId)),
+        ?assertEqual({error, already_ramping}, start_ramp(SimId, 51, 5)),
+        timer:sleep(4000),
+        ?assertEqual({error, already_ramping}, start_ramp(SimId, 52, 5)),
 
-    timer:sleep(4000),
+        ?assertEqual(true, go(SimId)),
 
-    ?assertEqual(70, power(SimId)),
-    ?assertEqual(false, go(SimId)),
-    ?assertEqual(70, target(SimId)),
-    ?assertEqual(5, rate(SimId)),
+        timer:sleep(4000),
 
-    ?assertEqual(ok, start_ramp(SimId, 85, 2)),
-    ?assertEqual(85, target(SimId)),
-    ?assertEqual(2, rate(SimId)),
-    ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
-    timer:sleep(4000),
-    ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
-    ?assertEqual(true, go(SimId)),
-    timer:sleep(4000),
+        ?assertEqual(70, power(SimId)),
+        ?assertEqual(false, go(SimId)),
+        ?assertEqual(70, target(SimId)),
+        ?assertEqual(5, rate(SimId)),
 
-    ?assertEqual(85, power(SimId)),
-    ?assertEqual(false, go(SimId)),
-    ?assertEqual(85, target(SimId)),
-    ?assertEqual(2, rate(SimId)),
-    egon_server:stop(),
-    ok end]}.
+        ?assertEqual(ok, start_ramp(SimId, 85, 2)),
+        ?assertEqual(85, target(SimId)),
+        ?assertEqual(2, rate(SimId)),
+        ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
+        timer:sleep(4000),
+        ?assertEqual({error, already_ramping}, start_ramp(SimId, 50, 5)),
+        ?assertEqual(true, go(SimId)),
+        timer:sleep(4000),
+
+        ?assertEqual(85, power(SimId)),
+        ?assertEqual(false, go(SimId)),
+        ?assertEqual(85, target(SimId)),
+        ?assertEqual(2, rate(SimId)),
+        egon_server:stop(),
+        ok end]}.

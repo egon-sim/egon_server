@@ -8,20 +8,20 @@
 %%%------------------------------------------------------------------
 -module(egon_server).
 
-% API
+%% API
 -export([
-	start/0,
-	stop/0,
-	shutdown/0,
-	restart/0,
-	run/1,
-	pause/1,
-	new_sim/0,
-	new_sim/1,
-	new_sim/3,
-	stop_sim/1,
-	list_sims/0,
-	sim_loaded/1	
+	 start/0,
+	 stop/0,
+	 shutdown/0,
+	 restart/0,
+	 run/1,
+	 pause/1,
+	 new_sim/0,
+	 new_sim/1,
+	 new_sim/3,
+	 stop_sim/1,
+	 list_sims/0,
+	 sim_loaded/1	
 	]).
 
 

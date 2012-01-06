@@ -11,34 +11,34 @@
 -behaviour(gen_server).
 -define(SERVER, {global, ?MODULE}).
 
-% API
+%% API
 -export([
-	start_link/0,
-	stop_link/0,
-	simulators/0,
-	start_new_simulator/3,
-	connect_to_simulator/2,
-	sim_info/1,
-	sim_clients/1,
-	stop_simulator/1
+	 start_link/0,
+	 stop_link/0,
+	 simulators/0,
+	 start_new_simulator/3,
+	 connect_to_simulator/2,
+	 sim_info/1,
+	 sim_clients/1,
+	 stop_simulator/1
 	]).
 
-% gen_server callbacks
+%% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% data structures
+%% data structures
 -record(tracker_state, {
-			simulators,
-			next_id
-			}).
+	  simulators,
+	  next_id
+	 }).
 
 -record(simulator_manifest, {
-	  	  	     id,
-	  	  	     sup_pid,
-	  	  	     name,
-	  	  	     desc,
-	  	  	     owner
-	  	  	     }).
+	  id,
+	  sup_pid,
+	  name,
+	  desc,
+	  owner
+	 }).
 
 
 %%%==================================================================
@@ -139,7 +139,7 @@ init([]) ->
     {ok, #tracker_state{simulators = [], next_id = 1}}.
 
 handle_call({start_simulator, Name, Desc, User}, _From, State) -> 
-%% State#tracker_state.next_id should never be reused, SimId should be unique for every simulator instance
+    %% State#tracker_state.next_id should never be reused, SimId should be unique for every simulator instance
     Sims = State#tracker_state.simulators,
     SimId = State#tracker_state.next_id,
     case es_simulator_dispatcher:start_child(SimId) of

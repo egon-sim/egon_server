@@ -11,51 +11,51 @@
 -behaviour(gen_server).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
-% API
+%% API
 -export([
-	start_link/1,
-	stop_link/1,
-	cycle_len/1,
-	set_cycle_len/2,
-	parameters/1,
-	clear_parameters/1,
-	add_parameter/2,
-	add_parameters/2,
-	status/1,
-	timestamp/1,
-	database/1,
-	csv_dump/1,
-	range_dump/4,
-	range_dump/5,
-	start_logging/1,
-	stop_logging/1
+	 start_link/1,
+	 stop_link/1,
+	 cycle_len/1,
+	 set_cycle_len/2,
+	 parameters/1,
+	 clear_parameters/1,
+	 add_parameter/2,
+	 add_parameters/2,
+	 status/1,
+	 timestamp/1,
+	 database/1,
+	 csv_dump/1,
+	 range_dump/4,
+	 range_dump/5,
+	 start_logging/1,
+	 stop_logging/1
 	]).
 
-% gen_server callbacks
+%% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
-% data structures
+%% data structures
 -record(log_state, {
-		   simid, % ID of a simulator to which this log server belongs
-		   timer, % reference of timer which sends ticks to log server
-		   status, % status of log server = running | stopped
-		   cycle_len, % number of miliseconds between collecting data
-		   parameters, % list of paramteres which to take when
-		   	       % collecting data
-		   database % list of collected data
-		   }).
+	  simid, % ID of a simulator to which this log server belongs
+	  timer, % reference of timer which sends ticks to log server
+	  status, % status of log server = running | stopped
+	  cycle_len, % number of miliseconds between collecting data
+	  parameters, % list of paramteres which to take when
+						% collecting data
+	  database % list of collected data
+	 }).
 -record(log_parameter, {
-		       id, % atom
-		       description, % string(): description of parameter
-		       mfa, % {Module, Function, Arguments} defines a
-		           % call to retreive value of the parameter
-		       value % value of given parameter
-		       }).
+	  id, % atom
+	  description, % string(): description of parameter
+	  mfa, % {Module, Function, Arguments} defines a
+						% call to retreive value of the parameter
+	  value % value of given parameter
+	 }).
 -record(log_entry, {
-		   timestamp, % value of erlang:now() at the moment
-		              % when value of the parameter is taken
-		   parameters % [log_parameter()]
-		   }).
+	  timestamp, % value of erlang:now() at the moment
+						% when value of the parameter is taken
+	  parameters % [log_parameter()]
+	 }).
 
 
 %%%==================================================================
@@ -327,7 +327,7 @@ handle_cast({set, cycle_len, Val}, State) when State#log_state.status =:= runnin
 handle_cast({set, parameters, []}, State) ->
     error_logger:info_report(["Clearing parameters from log server"]),
     {noreply, State#log_state{parameters=[]}};
-    
+
 handle_cast({set, parameters, Val}, State) ->
     error_logger:info_report(["Setting parameters to log server", {parameters, Val}]),
     {noreply, State#log_state{parameters=Val}};
@@ -388,7 +388,7 @@ create_csv_dump(Old_header, [Head|Rest], Acc) ->
 
 create_range(Database, {Params, StartTimestamp, EndTimestamp, Frequency}) ->
     create_range([], Database, {Params, StartTimestamp, EndTimestamp, Frequency}).
-    
+
 create_range(Acc, [], _) ->
     Acc;
 create_range(Acc, [Head|Rest], {Params, StartTimestamp, EndTimestamp, Frequency}) ->
@@ -408,7 +408,7 @@ create_range(Acc, [Head|Rest], {Params, StartTimestamp, EndTimestamp, Frequency}
 		    New_endTimestamp = EndTimestamp
 	    end,
     	    create_range(New_acc, Rest, {Params, StartTimestamp, New_endTimestamp, Frequency})
-	end.
+    end.
 
 get_header(Entry) ->
     get_header(Entry#log_entry.parameters, []).
@@ -426,28 +426,28 @@ csv_entries(Params, #log_entry{timestamp = Timestamp, parameters = Entries}) ->
 
 csv_entry(Params, Entries) ->
     lists:map(
-        fun(#log_parameter{value = Value}) ->
-            Value
-        end,
-        csv_entry_pick(Params, Entries)).
+      fun(#log_parameter{value = Value}) ->
+	      Value
+      end,
+      csv_entry_pick(Params, Entries)).
 
 csv_entry_pick(all, Entries) ->
     Entries;
 csv_entry_pick(Params, Entries) ->
     csv_entry_sort(
-        Params,
-        lists:filter(
-            fun(#log_parameter{id = Id}) ->
+      Params,
+      lists:filter(
+	fun(#log_parameter{id = Id}) ->
                 lists:member(Id, Params)
-            end,
-            Entries)).
+	end,
+	Entries)).
 
 csv_entry_sort(Params, Entries) ->
     lists:sort(
-        fun(#log_parameter{id = A}, #log_parameter{id = B}) ->
-            index(A, Params) < index(B, Params)
-        end,
-        Entries).
+      fun(#log_parameter{id = A}, #log_parameter{id = B}) ->
+	      index(A, Params) < index(B, Params)
+      end,
+      Entries).
 
 index(Member, List) ->
     index(Member, List, 0).
@@ -512,16 +512,16 @@ collect_parameters(State) ->
 
 atomify(String) ->
     list_to_atom(lists:map(
-        fun(Char) ->
-            Space = hd(" "),
-            if
-                Char == Space ->
-                    hd("_");
-                true ->
-                    Char
-            end
-        end,
-        String)).
+		   fun(Char) ->
+			   Space = hd(" "),
+			   if
+			       Char == Space ->
+				   hd("_");
+			       true ->
+				   Char
+			   end
+		   end,
+		   String)).
 
 
 %%%==================================================================
@@ -559,7 +559,7 @@ unit_test() ->
 
     ?assertEqual(ok, add_parameter(SimId, {nodes, "Nodes", {erlang, nodes, []}})),
     ?assertEqual([#log_parameter{id = nodes, description = "Nodes", mfa = {erlang, nodes, []}, value = undefined}, 
-    #log_parameter{id = node, description = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
+		  #log_parameter{id = node, description = "Node", mfa = {erlang, node, []}, value = undefined}], parameters(SimId)),
 
     timer:sleep(2000),
     ?assertEqual(ok, stop_logging(SimId)),
@@ -594,9 +594,9 @@ integration_test() ->
     ?assertEqual(ok, set_cycle_len(SimId, 500)),
 
     ok = add_parameters(SimId, [
-        {tavg, "Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
-        {turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
-    ]),
+				{tavg, "Core Tavg", {gen_server, call, [{global, {SimId, es_core_server}}, {get, tavg}]}},
+				{turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
+			       ]),
 
     ?assertEqual(ok, start_logging(SimId)),
     es_rod_position_server:step_in(SimId),
@@ -606,8 +606,8 @@ integration_test() ->
     es_rod_position_server:step_in(SimId),
 
     ?assertEqual(ok, add_parameter(SimId, 
-        {turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
-    )),
+				   {turbine_power, "Turbine power", {gen_server, call, [{global, {SimId, es_turbine_server}}, {get, power}]}}
+				  )),
 
     timer:sleep(2000),
     ?assertEqual(ok, stop_logging(SimId)),
