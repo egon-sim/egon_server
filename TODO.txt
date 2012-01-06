@@ -10,6 +10,7 @@ Protocol:
 
 Cleanup:
 move es_connection_server:start_new_simulator/1 to es_connection_server:call/2
+move gen_server:cast(Child, {listen}) from es_interface_dispatcher:start_child(SimId, User) to es_interface_server:init/1
 
 General features:
 *+ CVCS: boration/dilution control (makeup counters, selector switch, start/stop switch)
