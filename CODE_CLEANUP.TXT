@@ -1,11 +1,7 @@
 FOR EACH MODULE:
-* write module-level description
-* write and document an API (hide gen_server:call)
 * document data structures
 * write unit_test/0 and integration_test/0
 * fix indenting if needed
-* remove "port" if left
-* remove export_all
 * replace handle_call with handle_cast where possible
 * add error_logger:info_report to important calls
 * replace all gen_server:calls referring to this module with API calls
