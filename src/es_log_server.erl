@@ -536,7 +536,6 @@ timestamp_test() ->
     ?assertEqual({1, 999999, 3}, dec_timestamp({2, 2, 3}, 3)),
     ok.
 
-
 unit_test() ->
     SimId = 1,
     {ok, _} = start_link(SimId),

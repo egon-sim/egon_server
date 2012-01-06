@@ -1,3 +1,10 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server starting and supervising main subsystems of a
+%%%      simulator. Started by es_simulator_dispatcher.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_simulator_sup).
 
 -behaviour(supervisor).
@@ -12,6 +19,20 @@
 %% Supervisor callbacks
 -export([init/1]).
 
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the supervisor.
+%%
+%% @spec start_link(SimId::integer()) -> Result
+%% where
+%%  Result = {ok,Pid} | ignore | {error,Error}
+%%  Pid = pid()
+%%  Error = {already_started,Pid}} | shutdown | term()
+%% @end
+%%-------------------------------------------------------------------
 start_link(SimId) ->
    io:format("Starting new simulator (Id: ~p).~n", [SimId]),
    supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
@@ -29,6 +50,10 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 children(SimId) ->
     supervisor:which_children(?SERVER(SimId)).
+
+%%%==================================================================
+%%% supervisor callbacks
+%%%==================================================================
 
 init([SimId]) ->
    Utility_sup = {es_utility_sup, {es_utility_sup, start_link, [SimId]},
