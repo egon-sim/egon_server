@@ -25,8 +25,8 @@ BACKLOG (x = DONE):
 [ ] es_core_server.erl
 [ ] es_curvebook_server.erl
 [ ] es_flux_buffer_server.erl
-[ ] es_interface_dispatcher.erl
-[ ] es_interface_server.erl
+[x] es_interface_dispatcher.erl
+[x] es_interface_server.erl
 [x] es_log_server.erl
 [ ] es_makeup_buffer_server.erl
 [ ] es_primary_sup.erl

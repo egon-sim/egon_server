@@ -58,7 +58,6 @@
 		   }).
 
 
-
 %%%==================================================================
 %%% API
 %%%==================================================================
@@ -352,6 +351,7 @@ handle_info(timeout, State) ->
 %handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
+
 
 %%%==================================================================
 %%% Internal functions
