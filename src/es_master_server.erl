@@ -1,7 +1,7 @@
 %%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Server controlling the whole system.
+%%% @doc Server controlling the whole system. Is started by es_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_master_server).

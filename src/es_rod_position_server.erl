@@ -2,7 +2,7 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server representing a model of control and shutdown rods
-%%%      positioning system.
+%%%      positioning system. Is started by es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_rod_position_server).

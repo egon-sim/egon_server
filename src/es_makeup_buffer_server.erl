@@ -3,7 +3,8 @@
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server borates and dilutes RCS in controlled manner. Change
 %%%      of boron concentration in RCS in never a step function, but
-%%%      ramp. This module provides required ramp.
+%%%      ramp. This module provides required ramp. Is started by
+%%%      es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_makeup_buffer_server).

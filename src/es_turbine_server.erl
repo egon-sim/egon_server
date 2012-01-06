@@ -2,7 +2,7 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server implementing model of nuclear power plant main
-%%%      turbine.
+%%%      turbine. Is started by es_secondary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_turbine_server).

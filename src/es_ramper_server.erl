@@ -1,7 +1,10 @@
 %%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @doc Server which controls the turbine during continuous changes
+%%% 	 of power level. It periodicaly increases/decreases turbine
+%%% 	 power until target power is reached. Is started by
+%%%	 es_seconday_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_ramper_server).

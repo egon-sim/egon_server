@@ -2,7 +2,8 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server providing access to core design and other files
-%%%      defining model of the power plant.
+%%%      defining model of the power plant. Is started by
+%%%	 es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_curvebook_server).

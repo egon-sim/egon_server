@@ -3,7 +3,8 @@
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server representing a model of control and shutdown rods
 %%%      controlling system. It moves rods in and out of the core
-%%%      depending on Tavg - Tref mismatch.
+%%%      depending on Tavg - Tref mismatch. Is started by
+%%%	 es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_rod_controller_server).

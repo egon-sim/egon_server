@@ -1,7 +1,8 @@
 %%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Clock server. Server sending ticks with given frequency.
+%%% @doc Clock server. Server sending ticks with given frequency. Is
+%%% 	 started by es_utility_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_clock_server).

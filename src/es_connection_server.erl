@@ -3,7 +3,8 @@
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server handling TCP communication between client and whole
 %%%      EGON server. Among other stuff, it starts new simulators and
-%%%      connects clients with their simulators.
+%%%      connects clients with their simulators. Is started by
+%%%	 es_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_connection_server).

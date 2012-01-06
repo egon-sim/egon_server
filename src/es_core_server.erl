@@ -1,7 +1,8 @@
 %%%------------------------------------------------------------------
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
-%%% @doc Server implementing a model of reactor core.
+%%% @doc Server implementing a model of reactor core. Is started by
+%%%    	 es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_core_server).

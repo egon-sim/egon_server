@@ -2,7 +2,7 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server starting and supervising main subsystems of a
-%%%      simulator. Started by es_simulator_dispatcher.
+%%%      simulator. Is started by es_simulator_dispatcher.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_simulator_sup).

@@ -2,7 +2,8 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server for gradually changing flux of the core when step
-%%%      change of turbine power occurs.
+%%%      change of turbine power occurs. Is started by
+%%%      es_primary_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_flux_buffer_server).

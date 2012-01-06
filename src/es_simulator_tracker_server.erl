@@ -2,7 +2,8 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server for starting and stopping simulators and for
-%%%      providing information about simulators.
+%%%      providing information about simulators. Is started by
+%%%	 es_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_simulator_tracker_server).

@@ -2,7 +2,7 @@
 %%% @author Nikola Skoric <nskoric@gmail.com>
 %%% @copyright 2011 Nikola Skoric
 %%% @doc Server starting and supervising TCP interfaces to outside
-%%%      world.
+%%%      world. Is started by es_utility_sup.
 %%% @end
 %%%------------------------------------------------------------------
 -module(es_interface_dispatcher).
