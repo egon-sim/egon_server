@@ -1,0 +1,10 @@
+[{overlap, 100},
+{full_out, 228},
+{shutdown_rod_length, 228},
+{shutdown_rod_number, 2},
+{control_rod_stops, [228, 356, 484, 612]},
+{speed_of_rods_in_manual, 48.0},
+{rod_control_dead_band, 1.5},
+{rod_control_lock_up, 0.5},
+{no_load_tavg, 291.8},
+{full_power_tavg, 305.0}].

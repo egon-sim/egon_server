@@ -2,7 +2,6 @@ rebar*
 rel/*
 *~
 *.beam
-priv/curvebook
 .eunit
 logs/*
 compile.bat
