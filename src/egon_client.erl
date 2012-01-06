@@ -48,7 +48,7 @@
 %%%==================================================================
 
 %%-------------------------------------------------------------------
-%% @doc Alias for start_link/3
+%% @doc Function documenting functionality of start/3.
 %%
 %% @spec start(doc) -> string()
 %% @end
@@ -57,7 +57,7 @@ start(doc) ->
     "egon_client:start_link(Host, Port, Username).".
 
 %%-------------------------------------------------------------------
-%% @doc Alias for start_link/3
+%% @doc Alias for start_link/3.
 %%
 %% @spec start(Host, Port, Username) -> {ok, Pid}
 %% where

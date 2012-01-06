@@ -16,6 +16,17 @@ start_link(SimId) ->
    io:format("Starting new simulator (Id: ~p).~n", [SimId]),
    supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
 
+%%-------------------------------------------------------------------
+%% @doc Returns list of  simulator supervisor's children for given
+%%      simulator ID (in fact calls supervisor:which_children/1).
+%%
+%% @spec children(SimId) -> [{Id,Child,Type,Modules}]
+%% where
+%%  Child = pid() | undefined
+%%  Type = worker | supervisor
+%%  Modules = [atom()] | dynamic
+%% @end
+%%-------------------------------------------------------------------
 children(SimId) ->
     supervisor:which_children(?SERVER(SimId)).
 

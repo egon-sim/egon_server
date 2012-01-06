@@ -74,11 +74,15 @@ simulators() ->
     gen_server:call(?SERVER, {get, simulators}).
 
 %%-------------------------------------------------------------------
-%% @doc Starts a new simulator instance
+%% @doc Starts a new simulator instance.
 %%
-%% @spec start_new_simulator(Name::string(), Description::string(), 
-%%       User::string()) ->
-%%       {ok, SimId::integer()} | {error, shutdown}
+%% @spec start_new_simulator(Name, Description, User) ->
+%%       {ok, SimId} | {error, shutdown}
+%% where
+%%   Name = string(), % name of new simulator
+%%   Description = string(), % short description of new simulator
+%%   User = string(), % username of user starting the simulator
+%%   SimId = integer(), % SimId of newly started simulator
 %% @end
 %%-------------------------------------------------------------------
 start_new_simulator(Name, Desc, User) ->
