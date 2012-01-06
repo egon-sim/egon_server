@@ -1,10 +1,42 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server logging various parameters of simulator and stores
+%%%      them so they can be retreived and analyzed at later
+%%%      time. Started by es_primary_sup.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_w7300_server).
--define(SERVER(SimId), {global, {SimId, ?MODULE}}).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(gen_server).
--export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, params/0, tref/1]).
+-define(SERVER(SimId), {global, {SimId, ?MODULE}}).
+
+% API
+-export([
+	start_link/1,
+	params/0,
+	tref/1
+	]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+% data structures
 -record(w7300_state, {simid}).
 
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the server.
+%%
+%% @spec start_link(SimId::integer()) -> {ok, Pid}
+%% where
+%%  Pid = pid()
+%% @end
+%%-------------------------------------------------------------------
 start_link(SimId) ->
     gen_server:start_link(?SERVER(SimId), ?MODULE, [SimId], []).
 
@@ -20,8 +52,21 @@ start_link(SimId) ->
 %%-------------------------------------------------------------------
 params() -> [{tref, "Tref", tref}].
 
+%%-------------------------------------------------------------------
+%% @doc Returns Tref of the simulator model.
+%%
+%% @spec tref(SimId::integer()) -> Tref
+%% where
+%%  Tref = float()
+%% @end
+%%-------------------------------------------------------------------
 tref(SimId) ->
     gen_server:call(?SERVER(SimId), {get, tref}).
+
+
+%%%==================================================================
+%%% gen_server callbacks
+%%%==================================================================
 
 init([SimId]) -> {ok, #w7300_state{simid = SimId}}.
 

@@ -1,18 +1,47 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Top supervisor of the application. Starts and supervises
+%%%      basic infrastructure for controlling simulator instances and
+%%%      communicating with outside world. Is started by es_app.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_sup).
--include_lib("eunit/include/eunit.hrl").
+
 -behaviour(supervisor).
+-define(SERVER, ?MODULE).
 
 %% API
--export([start_link/0]).
+-export([
+	start_link/0
+	]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
--define(SERVER, ?MODULE).
 
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the supervisor.
+%%
+%% @spec start_link(SimId::integer()) -> Result
+%% where
+%%  Result = {ok,Pid} | ignore | {error,Error}
+%%  Pid = pid()
+%%  Error = {already_started,Pid}} | shutdown | term()
+%% @end
+%%-------------------------------------------------------------------
 start_link() ->
    {ok, Port} = application:get_env(egon_server, port),
    supervisor:start_link({local, ?SERVER}, ?MODULE, [Port]).
+
+
+%%%==================================================================
+%%% supervisor callbacks
+%%%==================================================================
 
 init([Port]) ->
    Master = {es_master_server, {es_master_server, start_link, []},

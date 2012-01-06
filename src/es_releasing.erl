@@ -1,4 +1,13 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Helper module for generating erlang release. Application
+%%%      itself does not use this module, it is used only during
+%%%      developement and testing.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_releasing).
+
 -export([create_release/0, create_release/1, create_release/3]).
 
 create_release() ->

@@ -1,16 +1,45 @@
+%%%------------------------------------------------------------------
+%%% @author Nikola Skoric <nskoric@gmail.com>
+%%% @copyright 2011 Nikola Skoric
+%%% @doc Server starting and supervising primary subsystems of a
+%%%      power plant model. Is started by es_simulator_sup.
+%%% @end
+%%%------------------------------------------------------------------
 -module(es_primary_sup).
 
 -behaviour(supervisor).
 -define(SERVER(SimId), {global, {SimId, ?MODULE}}).
 
 %% API
--export([start_link/1]).
+-export([
+	start_link/1
+	]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
+
+%%%==================================================================
+%%% API
+%%%==================================================================
+
+%%-------------------------------------------------------------------
+%% @doc Starts the supervisor.
+%%
+%% @spec start_link(SimId::integer()) -> Result
+%% where
+%%  Result = {ok,Pid} | ignore | {error,Error}
+%%  Pid = pid()
+%%  Error = {already_started,Pid}} | shutdown | term()
+%% @end
+%%-------------------------------------------------------------------
 start_link(SimId) ->
    supervisor:start_link(?SERVER(SimId), ?MODULE, [SimId]).
+
+
+%%%==================================================================
+%%% supervisor callbacks
+%%%==================================================================
 
 init([SimId]) ->
    Curvebook = {es_curvebook_server, {es_curvebook_server, start_link, [SimId]},
